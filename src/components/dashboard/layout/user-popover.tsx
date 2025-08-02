@@ -11,6 +11,7 @@ import Typography from '@mui/material/Typography';
 import { GearSixIcon } from '@phosphor-icons/react/dist/ssr/GearSix';
 import { SignOutIcon } from '@phosphor-icons/react/dist/ssr/SignOut';
 import { UserIcon } from '@phosphor-icons/react/dist/ssr/User';
+import { UsersIcon } from '@phosphor-icons/react/dist/ssr/Users';
 
 import { paths } from '@/paths';
 import { authClient } from '@/lib/auth/client';
@@ -24,7 +25,7 @@ export interface UserPopoverProps {
 }
 
 export function UserPopover({ anchorEl, onClose, open }: UserPopoverProps): React.JSX.Element {
-  const { checkSession } = useUser();
+  const { checkSession, user } = useUser();
 
   const router = useRouter();
 
@@ -48,6 +49,10 @@ export function UserPopover({ anchorEl, onClose, open }: UserPopoverProps): Reac
     }
   }, [checkSession, router]);
 
+  const displayName = user ? `${user.firstName} ${user.lastName}` : 'User';
+  const displayEmail = user?.email || 'user@example.com';
+  const isAdmin = user?.role === 'ADMIN';
+
   return (
     <Popover
       anchorEl={anchorEl}
@@ -57,13 +62,26 @@ export function UserPopover({ anchorEl, onClose, open }: UserPopoverProps): Reac
       slotProps={{ paper: { sx: { width: '240px' } } }}
     >
       <Box sx={{ p: '16px 20px ' }}>
-        <Typography variant="subtitle1">Sofia Rivers</Typography>
+        <Typography variant="subtitle1">{displayName}</Typography>
         <Typography color="text.secondary" variant="body2">
-          sofia.rivers@devias.io
+          {displayEmail}
         </Typography>
+        {isAdmin && (
+          <Typography color="primary.main" variant="caption" sx={{ mt: 0.5, display: 'block' }}>
+            Administrator
+          </Typography>
+        )}
       </Box>
       <Divider />
       <MenuList disablePadding sx={{ p: '8px', '& .MuiMenuItem-root': { borderRadius: 1 } }}>
+        {isAdmin && (
+          <MenuItem component={RouterLink} href={paths.dashboard.users} onClick={onClose}>
+            <ListItemIcon>
+              <UsersIcon fontSize="var(--icon-fontSize-md)" />
+            </ListItemIcon>
+            User Management
+          </MenuItem>
+        )}
         <MenuItem component={RouterLink} href={paths.dashboard.settings} onClick={onClose}>
           <ListItemIcon>
             <GearSixIcon fontSize="var(--icon-fontSize-md)" />

@@ -1,6 +1,7 @@
 'use client';
 
 import type { User } from '@/types/user';
+import { authApi, type LoginRequest } from '@/lib/api/auth';
 
 function generateToken(): string {
   const arr = new Uint8Array(12);
@@ -14,6 +15,7 @@ const user = {
   firstName: 'Sofia',
   lastName: 'Rivers',
   email: 'sofia@devias.io',
+  role: 'USER',
 } satisfies User;
 
 export interface SignUpParams {
@@ -38,13 +40,7 @@ export interface ResetPasswordParams {
 
 class AuthClient {
   async signUp(_: SignUpParams): Promise<{ error?: string }> {
-    // Make API request
-
-    // We do not handle the API, so we'll just generate a token and store it in localStorage.
-    const token = generateToken();
-    localStorage.setItem('custom-auth-token', token);
-
-    return {};
+    return { error: 'User registration is disabled. Only admins can create users.' };
   }
 
   async signInWithOAuth(_: SignInWithOAuthParams): Promise<{ error?: string }> {
@@ -52,19 +48,32 @@ class AuthClient {
   }
 
   async signInWithPassword(params: SignInWithPasswordParams): Promise<{ error?: string }> {
-    const { email, password } = params;
-
-    // Make API request
-
-    // We do not handle the API, so we'll check if the credentials match with the hardcoded ones.
-    if (email !== 'sofia@devias.io' || password !== 'Secret1') {
-      return { error: 'Invalid credentials' };
+    try {
+      const { email, password } = params;
+      
+      const response = await authApi.login({ email, password });
+      
+      if (response.success && response.data) {
+        // Store the JWT token
+        localStorage.setItem('auth-token', response.data.token);
+        
+        // Store user data with role
+        const userData = {
+          ...response.data.user,
+          role: response.data.user.role || 'USER', // Ensure role is set
+        };
+        localStorage.setItem('user-data', JSON.stringify(userData));
+        
+        return {};
+      } else {
+        return { error: response.message || 'Login failed' };
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      return { 
+        error: error instanceof Error ? error.message : 'Login failed. Please check your credentials.' 
+      };
     }
-
-    const token = generateToken();
-    localStorage.setItem('custom-auth-token', token);
-
-    return {};
   }
 
   async resetPassword(_: ResetPasswordParams): Promise<{ error?: string }> {
@@ -76,21 +85,70 @@ class AuthClient {
   }
 
   async getUser(): Promise<{ data?: User | null; error?: string }> {
-    // Make API request
+    try {
+      const token = localStorage.getItem('auth-token');
+      
+      if (!token) {
+        return { data: null };
+      }
 
-    // We do not handle the API, so just check if we have a token in localStorage.
-    const token = localStorage.getItem('custom-auth-token');
-
-    if (!token) {
+      // Try to get current user from API
+      const response = await authApi.getCurrentUser(token);
+      
+      if (response.success && response.data) {
+        const userData = {
+          id: response.data.id,
+          firstName: response.data.firstName,
+          lastName: response.data.lastName,
+          email: response.data.email,
+          role: response.data.role || 'USER', // Ensure role is set
+          avatar: '/assets/avatar.png', // Default avatar
+        };
+        return { data: userData };
+      } else {
+        // If API call fails, try to get from localStorage
+        const userData = localStorage.getItem('user-data');
+        if (userData) {
+          const user = JSON.parse(userData);
+          return { 
+            data: {
+              id: user.id,
+              firstName: user.firstName,
+              lastName: user.lastName,
+              email: user.email,
+              role: user.role || 'USER', // Ensure role is set
+              avatar: '/assets/avatar.png',
+            }
+          };
+        }
+        return { data: null };
+      }
+    } catch (error) {
+      console.error('Get user error:', error);
+      
+      // Fallback to localStorage
+      const userData = localStorage.getItem('user-data');
+      if (userData) {
+        const user = JSON.parse(userData);
+        return { 
+          data: {
+            id: user.id,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            role: user.role || 'USER', // Ensure role is set
+            avatar: '/assets/avatar.png',
+          }
+        };
+      }
+      
       return { data: null };
     }
-
-    return { data: user };
   }
 
   async signOut(): Promise<{ error?: string }> {
-    localStorage.removeItem('custom-auth-token');
-
+    localStorage.removeItem('auth-token');
+    localStorage.removeItem('user-data');
     return {};
   }
 }

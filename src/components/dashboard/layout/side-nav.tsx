@@ -14,6 +14,7 @@ import { CaretUpDownIcon } from '@phosphor-icons/react/dist/ssr/CaretUpDown';
 import type { NavItemConfig } from '@/types/nav';
 import { paths } from '@/paths';
 import { isNavItemActive } from '@/lib/is-nav-item-active';
+import { useUser } from '@/hooks/use-user';
 import { Logo } from '@/components/core/logo';
 
 import { navItems } from './config';
@@ -21,6 +22,13 @@ import { navIcons } from './nav-icons';
 
 export function SideNav(): React.JSX.Element {
   const pathname = usePathname();
+  const { user } = useUser();
+
+  // Filter nav items based on user role
+  const filteredNavItems = React.useMemo(() => {
+    const isAdmin = user?.role === 'ADMIN';
+    return navItems.filter(item => !item.adminOnly || isAdmin);
+  }, [user?.role]);
 
   return (
     <Box
@@ -70,7 +78,7 @@ export function SideNav(): React.JSX.Element {
               Workspace
             </Typography>
             <Typography color="inherit" variant="subtitle1">
-              Devias
+              TikTok Shop CRM
             </Typography>
           </Box>
           <CaretUpDownIcon />
@@ -78,37 +86,23 @@ export function SideNav(): React.JSX.Element {
       </Stack>
       <Divider sx={{ borderColor: 'var(--mui-palette-neutral-700)' }} />
       <Box component="nav" sx={{ flex: '1 1 auto', p: '12px' }}>
-        {renderNavItems({ pathname, items: navItems })}
+        {renderNavItems({ pathname, items: filteredNavItems })}
       </Box>
       <Divider sx={{ borderColor: 'var(--mui-palette-neutral-700)' }} />
       <Stack spacing={2} sx={{ p: '12px' }}>
         <div>
           <Typography color="var(--mui-palette-neutral-100)" variant="subtitle2">
-            Need more features?
+            Welcome back!
           </Typography>
           <Typography color="var(--mui-palette-neutral-400)" variant="body2">
-            Check out our Pro solution template.
+            {user ? `${user.firstName} ${user.lastName}` : 'User'}
           </Typography>
+          {user?.role === 'ADMIN' && (
+            <Typography color="primary.main" variant="caption" sx={{ display: 'block', mt: 0.5 }}>
+              Administrator
+            </Typography>
+          )}
         </div>
-        <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-          <Box
-            component="img"
-            alt="Pro version"
-            src="/assets/devias-kit-pro.png"
-            sx={{ height: 'auto', width: '160px' }}
-          />
-        </Box>
-        <Button
-          component="a"
-          endIcon={<ArrowSquareUpRightIcon fontSize="var(--icon-fontSize-md)" />}
-          fullWidth
-          href="https://material-kit-pro-react.devias.io/"
-          sx={{ mt: 2 }}
-          target="_blank"
-          variant="contained"
-        >
-          Pro version
-        </Button>
       </Stack>
     </Box>
   );
