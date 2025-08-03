@@ -1,30 +1,37 @@
-import { prisma } from '../config/database'
-import { hashPassword } from '../utils/auth'
+import { PrismaClient } from '@prisma/client'
+import { User, CreateUserRequest, UpdateUserRequest, PaginatedUsersResponse } from '../types/user'
 import { CreateUserInput, UpdateUserInput, PaginationInput } from '../utils/validation'
-import { UserResponse, PaginatedUsersResponse } from '../types/user'
+import bcrypt from 'bcryptjs'
+
+const prisma = new PrismaClient()
 
 export class UserService {
-  async createUser(data: CreateUserInput, createdBy: string): Promise<UserResponse> {
-    const hashedPassword = await hashPassword(data.password)
-    
+  async createUser(data: CreateUserInput, createdBy: string): Promise<User> {
+    const hashedPassword = await bcrypt.hash(data.password, 10)
+
     const user = await prisma.user.create({
       data: {
         ...data,
         password: hashedPassword,
-        dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : null,
         createdBy,
-        updatedBy: createdBy,
       },
     })
 
     return this.formatUserResponse(user)
   }
 
-  async updateUser(id: string, data: UpdateUserInput, updatedBy: string): Promise<UserResponse> {
+  async updateUser(id: string, data: UpdateUserInput, updatedBy: string): Promise<User> {
     const updateData: any = { ...data, updatedBy }
     
+    // Handle dateOfBirth properly - convert empty string to null, valid date to Date object
     if (data.dateOfBirth) {
-      updateData.dateOfBirth = new Date(data.dateOfBirth)
+      if (data.dateOfBirth.trim() === '') {
+        updateData.dateOfBirth = null;
+      } else {
+        updateData.dateOfBirth = new Date(data.dateOfBirth);
+      }
+    } else {
+      updateData.dateOfBirth = null;
     }
 
     const user = await prisma.user.update({
@@ -41,7 +48,7 @@ export class UserService {
     })
   }
 
-  async getUserById(id: string): Promise<UserResponse | null> {
+  async getUserById(id: string): Promise<User | null> {
     const user = await prisma.user.findUnique({
       where: { id },
     })
@@ -49,7 +56,7 @@ export class UserService {
     return user ? this.formatUserResponse(user) : null
   }
 
-  async getUserByEmail(email: string): Promise<UserResponse | null> {
+  async getUserByEmail(email: string): Promise<User | null> {
     const user = await prisma.user.findUnique({
       where: { email },
     })
@@ -67,9 +74,9 @@ export class UserService {
 
     if (search) {
       where.OR = [
-        { firstName: { contains: search, mode: 'insensitive' } },
-        { lastName: { contains: search, mode: 'insensitive' } },
-        { email: { contains: search, mode: 'insensitive' } },
+        { firstName: { contains: search } },
+        { lastName: { contains: search } },
+        { email: { contains: search } },
       ]
     }
 
@@ -109,7 +116,7 @@ export class UserService {
     })
   }
 
-  async deactivateUser(id: string, updatedBy: string): Promise<UserResponse> {
+  async deactivateUser(id: string, updatedBy: string): Promise<User> {
     const user = await prisma.user.update({
       where: { id },
       data: { 
@@ -121,7 +128,7 @@ export class UserService {
     return this.formatUserResponse(user)
   }
 
-  async activateUser(id: string, updatedBy: string): Promise<UserResponse> {
+  async activateUser(id: string, updatedBy: string): Promise<User> {
     const user = await prisma.user.update({
       where: { id },
       data: { 
@@ -133,18 +140,19 @@ export class UserService {
     return this.formatUserResponse(user)
   }
 
-  private formatUserResponse(user: any): UserResponse {
-    return {
+  private formatUserResponse(user: any): User {
+    // Ensure we're getting the actual values from the database
+    const formattedUser = {
       id: user.id,
       firstName: user.firstName,
       lastName: user.lastName,
       email: user.email,
-      phone: user.phone,
-      avatar: user.avatar,
-      bankAccount: user.bankAccount,
-      about: user.about,
-      address: user.address,
-      dateOfBirth: user.dateOfBirth,
+      phone: user.phone, // This should be "0978471074" from database
+      avatar: user.avatar, // This should be "" from database
+      bankAccount: user.bankAccount, // This should be "" from database
+      about: user.about, // This should be "" from database
+      address: user.address, // This should be "Kim Giang, Dai Kim, Hoang Main" from database
+      dateOfBirth: user.dateOfBirth, // This should be null from database
       role: user.role,
       status: user.status,
       isActive: user.isActive,
@@ -153,6 +161,8 @@ export class UserService {
       updatedAt: user.updatedAt,
       createdBy: user.createdBy,
       updatedBy: user.updatedBy,
-    }
+    };
+    
+    return formattedUser;
   }
 } 

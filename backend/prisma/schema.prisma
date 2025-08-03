@@ -24,6 +24,13 @@ enum UserStatus {
   SUSPENDED
 }
 
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
 model User {
   id            String     @id @default(cuid())
   firstName     String     @map("first_name")
@@ -31,7 +38,7 @@ model User {
   email         String     @unique
   phone         String?
   password      String
-  avatar        String?
+  avatar        String?    @db.Text
   bankAccount   String?    @map("bank_account")
   about         String?    @db.Text
   address       String?    @db.Text
@@ -45,5 +52,53 @@ model User {
   createdBy     String?    @map("created_by")
   updatedBy     String?    @map("updated_by")
 
+  // Task relationships
+  assignedTasks Task[]     @relation("TaskAssignee")
+  createdTasks  Task[]     @relation("TaskCreator")
+
   @@map("users")
+}
+
+model TaskType {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  price     Decimal  @db.Decimal(10, 2)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  createdBy String?  @map("created_by")
+  updatedBy String?  @map("updated_by")
+
+  // Task relationships
+  tasks Task[]
+
+  @@map("task_types")
+}
+
+model Task {
+  id          String     @id @default(cuid())
+  name        String
+  description String?    @db.Text
+  startDate   DateTime   @map("start_date")
+  endDate     DateTime   @map("end_date")
+  resource    String?    @db.Text
+  result      String?    @db.Text
+  status      TaskStatus @default(PENDING)
+  isActive    Boolean    @default(true) @map("is_active")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+  
+  // Relationships
+  taskTypeId  String     @map("task_type_id")
+  taskType    TaskType   @relation(fields: [taskTypeId], references: [id])
+  
+  assigneeId  String     @map("assignee_id")
+  assignee    User       @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  
+  createdById String     @map("created_by_id")
+  createdBy   User       @relation("TaskCreator", fields: [createdById], references: [id])
+  
+  updatedBy   String?    @map("updated_by")
+
+  @@map("tasks")
 }

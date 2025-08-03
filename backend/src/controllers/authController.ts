@@ -1,64 +1,72 @@
 import { Request, Response } from 'express'
 import { authenticateUser, generateToken, updateLastLogin } from '../utils/auth'
 import { LoginInput } from '../utils/validation'
-import { LoginResponse } from '../types/user'
+import bcrypt from 'bcryptjs'
+
+interface LoginResponse {
+  user: {
+    id: string
+    firstName: string
+    lastName: string
+    email: string
+    phone?: string
+    avatar?: string
+    bankAccount?: string
+    about?: string
+    address?: string
+    dateOfBirth?: string
+    role: string
+    status: string
+    isActive: boolean
+    lastLoginAt: string
+    createdAt: string
+    updatedAt: string
+    createdBy?: string
+    updatedBy?: string
+  }
+  token: string
+}
 
 export class AuthController {
   async login(req: Request, res: Response) {
     try {
       const { email, password }: LoginInput = req.body
 
-      console.log('Login attempt for email:', email) // Debug log
-
       const user = await authenticateUser(email, password)
       if (!user) {
-        console.log('Authentication failed for email:', email) // Debug log
         return res.status(401).json({
           success: false,
           message: 'Invalid email or password'
         })
       }
 
-      console.log('Authentication successful for user:', user) // Debug log
-
       // Update last login
       await updateLastLogin(user.id)
 
-      const tokenPayload = {
-        userId: user.id,
-        email: user.email,
-        role: user.role
+      // Get fresh user data with all fields
+      const { UserService } = await import('../services/userService')
+      const userService = new UserService()
+      const freshUser = await userService.getUserById(user.id)
+
+      if (!freshUser) {
+        return res.status(404).json({
+          success: false,
+          message: 'User not found after authentication'
+        })
       }
 
-      console.log('Generating token with payload:', tokenPayload) // Debug log
+      const tokenPayload = {
+        userId: freshUser.id,
+        email: freshUser.email,
+        role: freshUser.role
+      }
 
       const token = generateToken(tokenPayload)
 
       const response: LoginResponse = {
-        user: {
-          id: user.id,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          email: user.email,
-          phone: null,
-          avatar: null,
-          bankAccount: null,
-          about: null,
-          address: null,
-          dateOfBirth: null,
-          role: user.role,
-          status: 'ACTIVE',
-          isActive: user.isActive,
-          lastLoginAt: new Date(),
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          createdBy: null,
-          updatedBy: null,
-        },
+        user: freshUser as any, // Cast to fix type mismatch
         token
       }
-
-      console.log('Login response:', { success: true, user: response.user }) // Debug log
 
       return res.status(200).json({
         success: true,
@@ -77,13 +85,32 @@ export class AuthController {
   async me(req: Request, res: Response) {
     try {
       // User is already authenticated by middleware
-      const user = (req as any).user
+      const authenticatedUser = (req as any).user
 
-      console.log('Me endpoint - user:', user) // Debug log
+      // Fetch fresh user data from database
+      const { UserService } = await import('../services/userService')
+      const userService = new UserService()
+      const freshUser = await userService.getUserById(authenticatedUser.id)
+
+      if (!freshUser) {
+        return res.status(404).json({
+          success: false,
+          message: 'User not found'
+        })
+      }
+
+      // Convert dates to ISO strings for frontend, but preserve all other fields
+      const userForFrontend = {
+        ...freshUser,
+        lastLoginAt: freshUser.lastLoginAt ? new Date(freshUser.lastLoginAt).toISOString() : null,
+        createdAt: freshUser.createdAt ? new Date(freshUser.createdAt).toISOString() : null,
+        updatedAt: freshUser.updatedAt ? new Date(freshUser.updatedAt).toISOString() : null,
+        dateOfBirth: freshUser.dateOfBirth ? new Date(freshUser.dateOfBirth).toISOString() : null,
+      };
 
       return res.status(200).json({
         success: true,
-        data: user
+        data: userForFrontend
       })
     } catch (error) {
       console.error('Me error:', error)

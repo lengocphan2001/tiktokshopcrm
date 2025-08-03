@@ -82,6 +82,53 @@ export class UserController {
     }
   }
 
+  async updateOwnProfile(req: AuthenticatedRequest, res: Response) {
+    try {
+      const data: UpdateUserInput = req.body
+      const userId = req.user!.id
+
+      // Check if user exists
+      const existingUser = await this.userService.getUserById(userId)
+      if (!existingUser) {
+        return res.status(404).json({
+          success: false,
+          message: 'User not found'
+        })
+      }
+
+      // Check if email is being updated and if it already exists
+      if (data.email && data.email !== existingUser.email) {
+        const userWithEmail = await this.userService.getUserByEmail(data.email)
+        if (userWithEmail && userWithEmail.id !== userId) {
+          return res.status(400).json({
+            success: false,
+            message: 'User with this email already exists'
+          })
+        }
+      }
+
+      // Prevent users from changing their role or status
+      const safeData = { ...data }
+      delete safeData.role
+      delete safeData.status
+      delete safeData.isActive
+
+      const user = await this.userService.updateUser(userId, safeData, userId)
+
+      return res.status(200).json({
+        success: true,
+        message: 'Profile updated successfully',
+        data: user
+      })
+    } catch (error) {
+      console.error('Update own profile error:', error)
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      })
+    }
+  }
+
   async deleteUser(req: AuthenticatedRequest, res: Response) {
     try {
       const { id } = req.params
@@ -137,7 +184,7 @@ export class UserController {
 
   async getUsers(req: AuthenticatedRequest, res: Response) {
     try {
-      const params: PaginationInput = req.query as any
+      const params: PaginationInput = req.body as any
 
       const result = await this.userService.getUsers(params)
 

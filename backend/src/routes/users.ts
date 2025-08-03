@@ -11,28 +11,28 @@ import {
 const router = Router()
 const userController = new UserController()
 
-// All routes require admin access
-router.use(requireAdminRole)
-
 // GET /api/users - Get all users with pagination
-router.get('/', validateRequest(paginationSchema), userController.getUsers.bind(userController))
-
-// GET /api/users/:id - Get user by ID
-router.get('/:id', userController.getUserById.bind(userController))
+router.get('/', requireAdminRole, validateRequest(paginationSchema), userController.getUsers.bind(userController))
 
 // POST /api/users - Create new user (admin only)
-router.post('/', validateRequest(createUserSchema), userController.createUser.bind(userController))
+router.post('/', requireAdminRole, validateRequest(createUserSchema), userController.createUser.bind(userController))
 
-// PUT /api/users/:id - Update user
-router.put('/:id', validateRequest(updateUserSchema), userController.updateUser.bind(userController))
+// PUT /api/users/profile - Update own profile (authenticated users) - MUST COME BEFORE /:id
+router.put('/profile', authenticateToken, validateRequest(updateUserSchema), userController.updateOwnProfile.bind(userController))
+
+// GET /api/users/:id - Get user by ID
+router.get('/:id', requireAdminRole, userController.getUserById.bind(userController))
+
+// PUT /api/users/:id - Update user (admin only)
+router.put('/:id', requireAdminRole, validateRequest(updateUserSchema), userController.updateUser.bind(userController))
 
 // DELETE /api/users/:id - Delete user
-router.delete('/:id', userController.deleteUser.bind(userController))
+router.delete('/:id', requireAdminRole, userController.deleteUser.bind(userController))
 
 // PATCH /api/users/:id/deactivate - Deactivate user
-router.patch('/:id/deactivate', userController.deactivateUser.bind(userController))
+router.patch('/:id/deactivate', requireAdminRole, userController.deactivateUser.bind(userController))
 
 // PATCH /api/users/:id/activate - Activate user
-router.patch('/:id/activate', userController.activateUser.bind(userController))
+router.patch('/:id/activate', requireAdminRole, userController.activateUser.bind(userController))
 
 export default router 
