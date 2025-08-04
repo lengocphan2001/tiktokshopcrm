@@ -196,6 +196,19 @@ class UsersApi {
     return response;
   }
 
+  async updateOwnProfile(token: string, userData: UpdateUserRequest): Promise<ApiResponse<User>> {
+    const response = await this.request<User>(API_ENDPOINTS.USERS.PROFILE, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(userData),
+    });
+    
+    return response;
+  }
+
   async deleteUser(token: string, userId: string): Promise<ApiResponse<void>> {
     return this.request<void>(API_ENDPOINTS.USERS.DELETE(userId), {
       method: 'DELETE',

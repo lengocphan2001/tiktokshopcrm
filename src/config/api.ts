@@ -15,6 +15,7 @@ export const API_ENDPOINTS = {
     DELETE: (id: string) => `/users/${id}`,
     ACTIVATE: (id: string) => `/users/${id}/activate`,
     DEACTIVATE: (id: string) => `/users/${id}/deactivate`,
+    PROFILE: '/users/profile',
   },
   TASK_TYPES: {
     LIST: '/task-types',

@@ -9,14 +9,7 @@ function generateToken(): string {
   return Array.from(arr, (v) => v.toString(16).padStart(2, '0')).join('');
 }
 
-const user = {
-  id: 'USR-000',
-  avatar: '/assets/avatar.png',
-  firstName: 'Sofia',
-  lastName: 'Rivers',
-  email: 'sofia@devias.io',
-  role: 'USER',
-} satisfies User;
+// This is no longer used - user data comes from API
 
 export interface SignUpParams {
   firstName: string;
@@ -57,10 +50,26 @@ class AuthClient {
         // Store the JWT token
         localStorage.setItem('auth-token', response.data.token);
         
-        // Store user data with role
+        // Store complete user data
         const userData = {
-          ...response.data.user,
-          role: response.data.user.role || 'USER', // Ensure role is set
+          id: response.data.user.id,
+          firstName: response.data.user.firstName,
+          lastName: response.data.user.lastName,
+          email: response.data.user.email,
+          phone: response.data.user.phone,
+          avatar: response.data.user.avatar,
+          bankAccount: response.data.user.bankAccount,
+          about: response.data.user.about,
+          address: response.data.user.address,
+          dateOfBirth: response.data.user.dateOfBirth,
+          role: response.data.user.role || 'USER',
+          status: response.data.user.status,
+          isActive: response.data.user.isActive,
+          lastLoginAt: response.data.user.lastLoginAt,
+          createdAt: response.data.user.createdAt,
+          updatedAt: response.data.user.updatedAt,
+          createdBy: response.data.user.createdBy,
+          updatedBy: response.data.user.updatedBy,
         };
         localStorage.setItem('user-data', JSON.stringify(userData));
         
@@ -96,13 +105,26 @@ class AuthClient {
       const response = await authApi.getCurrentUser(token);
       
       if (response.success && response.data) {
+        // Use all fields returned by the API
         const userData = {
           id: response.data.id,
           firstName: response.data.firstName,
           lastName: response.data.lastName,
           email: response.data.email,
-          role: response.data.role || 'USER', // Ensure role is set
-          avatar: '/assets/avatar.png', // Default avatar
+          phone: response.data.phone,
+          avatar: response.data.avatar,
+          bankAccount: response.data.bankAccount,
+          about: response.data.about,
+          address: response.data.address,
+          dateOfBirth: response.data.dateOfBirth,
+          role: response.data.role || 'USER',
+          status: response.data.status,
+          isActive: response.data.isActive,
+          lastLoginAt: response.data.lastLoginAt,
+          createdAt: response.data.createdAt,
+          updatedAt: response.data.updatedAt,
+          createdBy: response.data.createdBy,
+          updatedBy: response.data.updatedBy,
         };
         return { data: userData };
       } else {
@@ -116,8 +138,20 @@ class AuthClient {
               firstName: user.firstName,
               lastName: user.lastName,
               email: user.email,
-              role: user.role || 'USER', // Ensure role is set
-              avatar: '/assets/avatar.png',
+              phone: user.phone,
+              avatar: user.avatar,
+              bankAccount: user.bankAccount,
+              about: user.about,
+              address: user.address,
+              dateOfBirth: user.dateOfBirth,
+              role: user.role || 'USER',
+              status: user.status,
+              isActive: user.isActive,
+              lastLoginAt: user.lastLoginAt,
+              createdAt: user.createdAt,
+              updatedAt: user.updatedAt,
+              createdBy: user.createdBy,
+              updatedBy: user.updatedBy,
             }
           };
         }
@@ -136,8 +170,20 @@ class AuthClient {
             firstName: user.firstName,
             lastName: user.lastName,
             email: user.email,
-            role: user.role || 'USER', // Ensure role is set
-            avatar: '/assets/avatar.png',
+            phone: user.phone,
+            avatar: user.avatar,
+            bankAccount: user.bankAccount,
+            about: user.about,
+            address: user.address,
+            dateOfBirth: user.dateOfBirth,
+            role: user.role || 'USER',
+            status: user.status,
+            isActive: user.isActive,
+            lastLoginAt: user.lastLoginAt,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt,
+            createdBy: user.createdBy,
+            updatedBy: user.updatedBy,
           }
         };
       }
