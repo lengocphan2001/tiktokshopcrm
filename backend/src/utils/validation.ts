@@ -62,14 +62,18 @@ export const taskTypePaginationSchema = z.object({
 export const createTaskSchema = z.object({
   name: z.string().min(1, 'Name is required').max(200, 'Name too long'),
   description: z.string().optional(),
-  startDate: z.coerce.date().min(new Date(), 'Start date must be in the future'),
+  startDate: z.coerce.date(),
   endDate: z.coerce.date(),
-  resource: z.string().url('Resource must be a valid URL').optional().or(z.literal('')),
-  result: z.string().url('Result must be a valid URL').optional().or(z.literal('')),
+  resource: z.string().optional(),
+  result: z.string().optional(),
+  status: z.enum(['PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']).optional(),
+  isActive: z.boolean().optional(),
   taskTypeId: z.string().min(1, 'Task type is required'),
   assigneeId: z.string().min(1, 'Assignee is required'),
-}).refine((data) => data.endDate > data.startDate, {
-  message: 'End date must be after start date',
+  createdById: z.string().optional(),
+  updatedBy: z.string().optional(),
+}).refine((data) => data.endDate >= data.startDate, {
+  message: 'End date must be equal to or after start date',
   path: ['endDate'],
 })
 
@@ -78,18 +82,21 @@ export const updateTaskSchema = z.object({
   description: z.string().optional(),
   startDate: z.coerce.date().optional(),
   endDate: z.coerce.date().optional(),
-  resource: z.string().url('Resource must be a valid URL').optional().or(z.literal('')),
-  result: z.string().url('Result must be a valid URL').optional().or(z.literal('')),
+  resource: z.string().optional(),
+  result: z.string().optional(),
+  status: z.enum(['PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']).optional(),
+  isActive: z.boolean().optional(),
   taskTypeId: z.string().min(1, 'Task type is required').optional(),
   assigneeId: z.string().min(1, 'Assignee is required').optional(),
-  status: z.enum(['PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']).optional(),
+  createdById: z.string().optional(),
+  updatedBy: z.string().optional(),
 }).refine((data) => {
   if (data.startDate && data.endDate) {
-    return data.endDate > data.startDate
+    return data.endDate >= data.startDate
   }
   return true
 }, {
-  message: 'End date must be after start date',
+  message: 'End date must be equal to or after start date',
   path: ['endDate'],
 })
 

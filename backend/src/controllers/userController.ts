@@ -15,15 +15,6 @@ export class UserController {
       const data: CreateUserInput = req.body
       const createdBy = req.user!.id
 
-      // Check if email already exists
-      const existingUser = await this.userService.getUserByEmail(data.email)
-      if (existingUser) {
-        return res.status(400).json({
-          success: false,
-          message: 'User with this email already exists'
-        })
-      }
-
       const user = await this.userService.createUser(data, createdBy)
 
       return res.status(201).json({
@@ -33,6 +24,23 @@ export class UserController {
       })
     } catch (error) {
       console.error('Create user error:', error)
+      
+      // Handle validation errors
+      if (error instanceof Error) {
+        if (error.message === 'Email already exists') {
+          return res.status(400).json({
+            success: false,
+            message: 'Email already exists'
+          })
+        }
+        if (error.message === 'Phone number already exists') {
+          return res.status(400).json({
+            success: false,
+            message: 'Phone number already exists'
+          })
+        }
+      }
+      
       return res.status(500).json({
         success: false,
         message: 'Internal server error'
@@ -65,17 +73,6 @@ export class UserController {
 
       console.log('Existing user:', existingUser);
 
-      // Check if email is being updated and if it already exists
-      if (data.email && data.email !== existingUser.email) {
-        const userWithEmail = await this.userService.getUserByEmail(data.email)
-        if (userWithEmail && userWithEmail.id !== id) {
-          return res.status(400).json({
-            success: false,
-            message: 'User with this email already exists'
-          })
-        }
-      }
-
       const user = await this.userService.updateUser(id, data, updatedBy)
 
       console.log('Updated user response:', user);
@@ -88,6 +85,23 @@ export class UserController {
       })
     } catch (error) {
       console.error('Update user error:', error)
+      
+      // Handle validation errors
+      if (error instanceof Error) {
+        if (error.message === 'Email already exists') {
+          return res.status(400).json({
+            success: false,
+            message: 'Email already exists'
+          })
+        }
+        if (error.message === 'Phone number already exists') {
+          return res.status(400).json({
+            success: false,
+            message: 'Phone number already exists'
+          })
+        }
+      }
+      
       return res.status(500).json({
         success: false,
         message: 'Internal server error'
@@ -109,17 +123,6 @@ export class UserController {
         })
       }
 
-      // Check if email is being updated and if it already exists
-      if (data.email && data.email !== existingUser.email) {
-        const userWithEmail = await this.userService.getUserByEmail(data.email)
-        if (userWithEmail && userWithEmail.id !== userId) {
-          return res.status(400).json({
-            success: false,
-            message: 'User with this email already exists'
-          })
-        }
-      }
-
       // Prevent users from changing their role or status
       const safeData = { ...data }
       delete safeData.role
@@ -135,6 +138,23 @@ export class UserController {
       })
     } catch (error) {
       console.error('Update own profile error:', error)
+      
+      // Handle validation errors
+      if (error instanceof Error) {
+        if (error.message === 'Email already exists') {
+          return res.status(400).json({
+            success: false,
+            message: 'Email already exists'
+          })
+        }
+        if (error.message === 'Phone number already exists') {
+          return res.status(400).json({
+            success: false,
+            message: 'Phone number already exists'
+          })
+        }
+      }
+      
       return res.status(500).json({
         success: false,
         message: 'Internal server error'

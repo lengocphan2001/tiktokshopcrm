@@ -107,7 +107,12 @@ class UsersApi {
       console.log('========================');
 
       if (!response.ok) {
-        throw new Error(data.message || 'API request failed');
+        // Return the error response instead of throwing
+        return {
+          success: false,
+          message: data.message || 'API request failed',
+          data: undefined
+        };
       }
 
       return data;
@@ -115,10 +120,12 @@ class UsersApi {
       console.log('=== API ERROR DEBUG ===');
       console.log('Error:', error);
       console.log('========================');
-      if (error instanceof Error) {
-        throw error;
-      }
-      throw new Error('Network error');
+      // Return error response instead of throwing
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Network error',
+        data: undefined
+      };
     }
   }
 

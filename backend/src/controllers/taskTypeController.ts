@@ -137,7 +137,11 @@ export class TaskTypeController {
 
   async getTaskTypes(req: AuthenticatedRequest, res: Response) {
     try {
-      const params: TaskTypePaginationInput = req.query as any
+      const params: TaskTypePaginationInput = {
+        page: parseInt(req.query.page as string) || 1,
+        limit: parseInt(req.query.limit as string) || 10,
+        search: req.query.search as string || '',
+      }
 
       const result = await this.taskTypeService.getTaskTypes(params)
 

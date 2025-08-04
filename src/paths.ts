@@ -6,5 +6,7 @@ export const paths = {
     account: '/dashboard/account',
     users: '/dashboard/users',
     taskTypes: '/dashboard/task-types',
+    tasks: '/dashboard/tasks',
+    myTasks: '/dashboard/my-tasks',
   },
 } as const;

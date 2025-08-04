@@ -28,7 +28,8 @@ export function ModernDatePicker({
 }: DatePickerProps) {
   const handleDateChange = (newValue: Dayjs | null) => {
     if (newValue) {
-      onChange(newValue.format('YYYY-MM-DD'));
+      // Send as ISO string that can be parsed by z.coerce.date()
+      onChange(newValue.toISOString());
     } else {
       onChange('');
     }

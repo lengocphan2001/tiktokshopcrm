@@ -24,4 +24,18 @@ export const API_ENDPOINTS = {
     ACTIVATE: (id: string) => `/task-types/${id}/activate`,
     DEACTIVATE: (id: string) => `/task-types/${id}/deactivate`,
   },
+  UPLOAD: {
+    AVATAR: '/upload/avatar',
+  },
+  TASKS: {
+    LIST: '/tasks/list',
+    CREATE: '/tasks',
+    UPDATE: (id: string) => `/tasks/${id}`,
+    DELETE: (id: string) => `/tasks/${id}`,
+    ACTIVATE: (id: string) => `/tasks/${id}/activate`,
+    DEACTIVATE: (id: string) => `/tasks/${id}/deactivate`,
+    UPDATE_STATUS: (id: string) => `/tasks/${id}/status`,
+    UPDATE_RESULT: (id: string) => `/tasks/${id}/result`,
+    BY_ASSIGNEE: (assigneeId: string) => `/tasks/assignee/${assigneeId}`,
+  },
 } as const; 

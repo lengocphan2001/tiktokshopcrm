@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import {
+  Avatar,
   Box,
   Button,
   Card,
@@ -39,6 +40,7 @@ import { EyeSlashIcon } from '@phosphor-icons/react/dist/ssr/EyeSlash';
 import { useUser } from '@/hooks/use-user';
 import { usersApi } from '@/lib/api/users';
 import { ModernDatePicker } from '@/components/core/date-picker';
+import { AvatarUpload } from '@/components/core/avatar-upload';
 import dayjs from 'dayjs';
 
 interface User {
@@ -171,9 +173,7 @@ export function UserManagement(): React.JSX.Element {
       errors.phone = 'Please enter a valid phone number';
     }
 
-    if (createUserData.avatar && !/^https?:\/\/.+/.test(createUserData.avatar)) {
-      errors.avatar = 'Avatar must be a valid URL';
-    }
+    // Avatar validation removed since we're now uploading files
 
     if (createUserData.dateOfBirth) {
       const date = new Date(createUserData.dateOfBirth);
@@ -215,9 +215,7 @@ export function UserManagement(): React.JSX.Element {
       errors.phone = 'Please enter a valid phone number';
     }
 
-    if (editUserData.avatar && !/^https?:\/\/.+/.test(editUserData.avatar)) {
-      errors.avatar = 'Avatar must be a valid URL';
-    }
+    // Avatar validation removed since we're now uploading files
 
     if (editUserData.dateOfBirth) {
       const date = new Date(editUserData.dateOfBirth);
@@ -321,7 +319,14 @@ export function UserManagement(): React.JSX.Element {
         loadUsers();
         showSuccess('User created successfully!');
       } else {
-        setError(response.message || 'Failed to create user');
+        // Handle specific validation errors
+        if (response.message === 'Email already exists') {
+          setCreateErrors({ email: 'Email already exists' });
+        } else if (response.message === 'Phone number already exists') {
+          setCreateErrors({ phone: 'Phone number already exists' });
+                } else {
+          setError(response.message || 'Failed to create user');
+        }
       }
     } catch (error) {
       setError('Failed to create user');
@@ -441,7 +446,14 @@ export function UserManagement(): React.JSX.Element {
         loadUsers();
         showSuccess('User updated successfully!');
       } else {
-        setError(response.message || 'Failed to update user');
+        // Handle specific validation errors
+        if (response.message === 'Email already exists') {
+          setEditErrors({ email: 'Email already exists' });
+        } else if (response.message === 'Phone number already exists') {
+          setEditErrors({ phone: 'Phone number already exists' });
+        } else {
+          setError(response.message || 'Failed to update user');
+        }
       }
     } catch (error) {
       setError('Failed to update user');
@@ -678,6 +690,10 @@ export function UserManagement(): React.JSX.Element {
                   onChange={(e) => {
                     console.log('First name changed to:', e.target.value);
                     setCreateUserData({ ...createUserData, firstName: e.target.value });
+                    // Clear error when user starts typing
+                    if (createErrors.firstName) {
+                      setCreateErrors({ ...createErrors, firstName: '' });
+                    }
                   }}
                   fullWidth
                   error={!!createErrors.firstName}
@@ -688,7 +704,13 @@ export function UserManagement(): React.JSX.Element {
                 <TextField
                   label="Last Name"
                   value={createUserData.lastName}
-                  onChange={(e) => setCreateUserData({ ...createUserData, lastName: e.target.value })}
+                  onChange={(e) => {
+                    setCreateUserData({ ...createUserData, lastName: e.target.value });
+                    // Clear error when user starts typing
+                    if (createErrors.lastName) {
+                      setCreateErrors({ ...createErrors, lastName: '' });
+                    }
+                  }}
                   fullWidth
                   error={!!createErrors.lastName}
                   helperText={createErrors.lastName}
@@ -699,7 +721,13 @@ export function UserManagement(): React.JSX.Element {
                   label="Email"
                   type="email"
                   value={createUserData.email}
-                  onChange={(e) => setCreateUserData({ ...createUserData, email: e.target.value })}
+                  onChange={(e) => {
+                    setCreateUserData({ ...createUserData, email: e.target.value });
+                    // Clear error when user starts typing
+                    if (createErrors.email) {
+                      setCreateErrors({ ...createErrors, email: '' });
+                    }
+                  }}
                   fullWidth
                   error={!!createErrors.email}
                   helperText={createErrors.email}
@@ -709,7 +737,13 @@ export function UserManagement(): React.JSX.Element {
                 <TextField
                   label="Phone"
                   value={createUserData.phone}
-                  onChange={(e) => setCreateUserData({ ...createUserData, phone: e.target.value })}
+                  onChange={(e) => {
+                    setCreateUserData({ ...createUserData, phone: e.target.value });
+                    // Clear error when user starts typing
+                    if (createErrors.phone) {
+                      setCreateErrors({ ...createErrors, phone: '' });
+                    }
+                  }}
                   fullWidth
                   error={!!createErrors.phone}
                   helperText={createErrors.phone}
@@ -723,6 +757,10 @@ export function UserManagement(): React.JSX.Element {
                   onChange={(e) => {
                     console.log('Password changed to:', e.target.value);
                     setCreateUserData({ ...createUserData, password: e.target.value });
+                    // Clear error when user starts typing
+                    if (createErrors.password) {
+                      setCreateErrors({ ...createErrors, password: '' });
+                    }
                   }}
                   fullWidth
                   error={!!createErrors.password}
@@ -730,13 +768,14 @@ export function UserManagement(): React.JSX.Element {
                 />
               </Grid>
               <Grid size={{ xs: 12 }}>
-                <TextField
-                  label="Avatar URL"
+                <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                  Avatar
+                </Typography>
+                <AvatarUpload
                   value={createUserData.avatar}
-                  onChange={(e) => setCreateUserData({ ...createUserData, avatar: e.target.value })}
-                  fullWidth
+                  onChange={(avatarUrl) => setCreateUserData({ ...createUserData, avatar: avatarUrl })}
                   error={!!createErrors.avatar}
-                  helperText={createErrors.avatar || "Optional: URL to user's avatar image"}
+                  helperText={createErrors.avatar || "Optional: Upload user's avatar image"}
                 />
               </Grid>
               <Grid size={{ xs: 12 }}>
@@ -899,12 +938,19 @@ export function UserManagement(): React.JSX.Element {
                 </Grid>
                 <Grid size={{ xs: 12 }}>
                   <Box>
-                    <Typography variant="subtitle2" color="text.secondary">
-                      Avatar URL
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
+                      Avatar
                     </Typography>
-                    <Typography variant="body1">
-                      {viewingUser.avatar || 'Not provided'}
-                    </Typography>
+                    {viewingUser.avatar ? (
+                      <Avatar
+                        src={viewingUser.avatar}
+                        sx={{ width: 80, height: 80 }}
+                      />
+                    ) : (
+                      <Typography variant="body1" color="text.secondary">
+                        Not provided
+                      </Typography>
+                    )}
                   </Box>
                 </Grid>
                 <Grid size={{ xs: 12 }}>
@@ -1001,6 +1047,10 @@ export function UserManagement(): React.JSX.Element {
                   onChange={(e) => {
                     console.log('First name changed:', e.target.value);
                     setEditUserData({ ...editUserData, firstName: e.target.value });
+                    // Clear error when user starts typing
+                    if (editErrors.firstName) {
+                      setEditErrors({ ...editErrors, firstName: '' });
+                    }
                   }}
                   fullWidth
                   error={!!editErrors.firstName}
@@ -1011,7 +1061,13 @@ export function UserManagement(): React.JSX.Element {
                 <TextField
                   label="Last Name"
                   value={editUserData.lastName || ''}
-                  onChange={(e) => setEditUserData({ ...editUserData, lastName: e.target.value })}
+                  onChange={(e) => {
+                    setEditUserData({ ...editUserData, lastName: e.target.value });
+                    // Clear error when user starts typing
+                    if (editErrors.lastName) {
+                      setEditErrors({ ...editErrors, lastName: '' });
+                    }
+                  }}
                   fullWidth
                   error={!!editErrors.lastName}
                   helperText={editErrors.lastName}
@@ -1022,7 +1078,13 @@ export function UserManagement(): React.JSX.Element {
                   label="Email"
                   type="email"
                   value={editUserData.email || ''}
-                  onChange={(e) => setEditUserData({ ...editUserData, email: e.target.value })}
+                  onChange={(e) => {
+                    setEditUserData({ ...editUserData, email: e.target.value });
+                    // Clear error when user starts typing
+                    if (editErrors.email) {
+                      setEditErrors({ ...editErrors, email: '' });
+                    }
+                  }}
                   fullWidth
                   error={!!editErrors.email}
                   helperText={editErrors.email}
@@ -1032,20 +1094,27 @@ export function UserManagement(): React.JSX.Element {
                 <TextField
                   label="Phone"
                   value={editUserData.phone || ''}
-                  onChange={(e) => setEditUserData({ ...editUserData, phone: e.target.value })}
+                  onChange={(e) => {
+                    setEditUserData({ ...editUserData, phone: e.target.value });
+                    // Clear error when user starts typing
+                    if (editErrors.phone) {
+                      setEditErrors({ ...editErrors, phone: '' });
+                    }
+                  }}
                   fullWidth
                   error={!!editErrors.phone}
                   helperText={editErrors.phone}
                 />
               </Grid>
               <Grid size={{ xs: 12 }}>
-                <TextField
-                  label="Avatar URL"
+                <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                  Avatar
+                </Typography>
+                <AvatarUpload
                   value={editUserData.avatar || ''}
-                  onChange={(e) => setEditUserData({ ...editUserData, avatar: e.target.value })}
-                  fullWidth
+                  onChange={(avatarUrl) => setEditUserData({ ...editUserData, avatar: avatarUrl })}
                   error={!!editErrors.avatar}
-                  helperText={editErrors.avatar || "Optional: URL to user's avatar image"}
+                  helperText={editErrors.avatar || "Optional: Upload user's avatar image"}
                 />
               </Grid>
               <Grid size={{ xs: 12 }}>

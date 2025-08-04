@@ -7,6 +7,29 @@ const prisma = new PrismaClient()
 
 export class UserService {
   async createUser(data: CreateUserInput, createdBy: string): Promise<User> {
+    // Check for existing user with same email
+    const existingUserWithEmail = await prisma.user.findUnique({
+      where: { email: data.email },
+    })
+
+    if (existingUserWithEmail) {
+      throw new Error('Email already exists')
+    }
+
+    // Check for existing user with same phone (if phone is provided)
+    if (data.phone && data.phone.trim() !== '') {
+      const existingUserWithPhone = await prisma.user.findFirst({
+        where: { 
+          phone: data.phone,
+          id: { not: existingUserWithEmail?.id } // Exclude current user if updating
+        },
+      })
+
+      if (existingUserWithPhone) {
+        throw new Error('Phone number already exists')
+      }
+    }
+
     const hashedPassword = await bcrypt.hash(data.password, 10)
 
     // Handle dateOfBirth properly - convert empty string to null
@@ -41,6 +64,34 @@ export class UserService {
     console.log('User ID:', id);
     console.log('Update data:', data);
     console.log('Updated by:', updatedBy);
+    
+    // Check for existing user with same email (if email is being updated)
+    if (data.email) {
+      const existingUserWithEmail = await prisma.user.findFirst({
+        where: { 
+          email: data.email,
+          id: { not: id } // Exclude current user
+        },
+      })
+
+      if (existingUserWithEmail) {
+        throw new Error('Email already exists')
+      }
+    }
+
+    // Check for existing user with same phone (if phone is being updated)
+    if (data.phone && data.phone.trim() !== '') {
+      const existingUserWithPhone = await prisma.user.findFirst({
+        where: { 
+          phone: data.phone,
+          id: { not: id } // Exclude current user
+        },
+      })
+
+      if (existingUserWithPhone) {
+        throw new Error('Phone number already exists')
+      }
+    }
     
     // Filter out undefined values and ensure field names match Prisma schema
     const cleanData: any = {};

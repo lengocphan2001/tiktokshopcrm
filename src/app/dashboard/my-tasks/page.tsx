@@ -1,5 +1,5 @@
-import { TaskManagement } from '@/components/dashboard/tasks/task-management'
+import { MyTasks } from '@/components/dashboard/tasks/my-tasks';
 
 export default function MyTasksPage() {
-  return <TaskManagement isUserView={true} />
+  return <MyTasks />;
 } 

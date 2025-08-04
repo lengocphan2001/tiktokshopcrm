@@ -23,10 +23,17 @@ export class TaskController {
       })
     } catch (error: any) {
       console.error('Create task error:', error)
-      res.status(400).json({
-        success: false,
-        message: error.message || 'Failed to create task',
-      })
+      if (error instanceof Error) {
+        res.status(400).json({
+          success: false,
+          message: error.message || 'Failed to create task',
+        })
+      } else {
+        res.status(400).json({
+          success: false,
+          message: 'Failed to create task',
+        })
+      }
     }
   }
 
@@ -45,10 +52,17 @@ export class TaskController {
       })
     } catch (error: any) {
       console.error('Update task error:', error)
-      res.status(400).json({
-        success: false,
-        message: error.message || 'Failed to update task',
-      })
+      if (error instanceof Error) {
+        res.status(400).json({
+          success: false,
+          message: error.message || 'Failed to update task',
+        })
+      } else {
+        res.status(400).json({
+          success: false,
+          message: 'Failed to update task',
+        })
+      }
     }
   }
 
