@@ -11,8 +11,11 @@ import {
 const router = Router()
 const userController = new UserController()
 
-// GET /api/users - Get all users with pagination
+// GET /api/users - Get all users with pagination (admin only)
 router.get('/', requireAdminRole, validateRequest(paginationSchema), userController.getUsers.bind(userController))
+
+// GET /api/users/messaging - Get users for messaging (authenticated users)
+router.get('/messaging', authenticateToken, userController.getUsersForMessaging.bind(userController))
 
 // POST /api/users - Create new user (admin only)
 router.post('/', requireAdminRole, validateRequest(createUserSchema), userController.createUser.bind(userController))

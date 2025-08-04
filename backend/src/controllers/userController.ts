@@ -234,6 +234,36 @@ export class UserController {
     }
   }
 
+  async getUsersForMessaging(req: AuthenticatedRequest, res: Response) {
+    try {
+      // Use query parameters instead of body for GET request
+      const page = parseInt(req.query.page as string) || 1
+      const limit = parseInt(req.query.limit as string) || 100
+      const search = req.query.search as string || ''
+
+      const params: PaginationInput = {
+        page,
+        limit,
+        search,
+        role: undefined,
+        status: undefined,
+      }
+
+      const result = await this.userService.getUsers(params)
+
+      return res.status(200).json({
+        success: true,
+        data: result
+      })
+    } catch (error) {
+      console.error('Get users for messaging error:', error)
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      })
+    }
+  }
+
   async deactivateUser(req: AuthenticatedRequest, res: Response) {
     try {
       const { id } = req.params

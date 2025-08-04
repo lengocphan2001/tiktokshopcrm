@@ -44,6 +44,18 @@ enum NotificationStatus {
   READ
 }
 
+enum MessageType {
+  TEXT
+  SYSTEM
+  NOTIFICATION
+}
+
+enum MessageStatus {
+  SENT
+  DELIVERED
+  READ
+}
+
 model User {
   id            String     @id @default(cuid())
   firstName     String     @map("first_name")
@@ -71,6 +83,11 @@ model User {
 
   // Notification relationships
   notifications Notification[] @relation("UserNotifications")
+
+  // Message relationships
+  sentMessages     Message[] @relation("MessageSender")
+  receivedMessages Message[] @relation("MessageRecipient")
+  conversations    ConversationParticipant[]
 
   @@map("users")
 }
@@ -140,4 +157,54 @@ model Notification {
   task      Task?            @relation(fields: [taskId], references: [id])
 
   @@map("notifications")
+}
+
+model Conversation {
+  id          String   @id @default(cuid())
+  name        String?  // For group conversations
+  type        String   @default("DIRECT") // DIRECT, GROUP
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relationships
+  participants ConversationParticipant[]
+  messages     Message[]
+
+  @@map("conversations")
+}
+
+model ConversationParticipant {
+  id             String   @id @default(cuid())
+  userId         String   @map("user_id")
+  conversationId String   @map("conversation_id")
+  joinedAt       DateTime @default(now()) @map("joined_at")
+  leftAt         DateTime? @map("left_at")
+  isActive       Boolean  @default(true) @map("is_active")
+
+  // Relationships
+  user         User          @relation(fields: [userId], references: [id])
+  conversation Conversation   @relation(fields: [conversationId], references: [id])
+
+  @@unique([userId, conversationId])
+  @@map("conversation_participants")
+}
+
+model Message {
+  id             String        @id @default(cuid())
+  content        String        @db.Text
+  type           MessageType   @default(TEXT)
+  status         MessageStatus @default(SENT)
+  senderId       String        @map("sender_id")
+  recipientId    String?       @map("recipient_id")
+  conversationId String?       @map("conversation_id")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+
+  // Relationships
+  sender      User          @relation("MessageSender", fields: [senderId], references: [id])
+  recipient   User?         @relation("MessageRecipient", fields: [recipientId], references: [id])
+  conversation Conversation? @relation(fields: [conversationId], references: [id])
+
+  @@map("messages")
 }

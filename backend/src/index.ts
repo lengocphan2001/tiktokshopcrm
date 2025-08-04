@@ -10,6 +10,8 @@ import taskTypeRoutes from './routes/taskTypes';
 import { taskRoutes } from './routes/tasks';
 import uploadRoutes from './routes/upload';
 import notificationRoutes from './routes/notifications';
+import conversationRoutes from './routes/conversations';
+import messageRoutes from './routes/messages';
 import { WebSocketService } from './services/websocketService';
 import { globalNotificationHelper } from './services/globalNotificationHelper';
 
@@ -63,6 +65,8 @@ app.use('/api/task-types', taskTypeRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/conversations', conversationRoutes);
+app.use('/api/messages', messageRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

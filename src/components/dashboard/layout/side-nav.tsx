@@ -16,6 +16,7 @@ import { paths } from '@/paths';
 import { isNavItemActive } from '@/lib/is-nav-item-active';
 import { useUser } from '@/hooks/use-user';
 import { Logo } from '@/components/core/logo';
+import { MessageBadge } from '@/components/messaging/MessageBadge';
 
 import { navItems } from './config';
 import { navIcons } from './nav-icons';
@@ -23,6 +24,48 @@ import { navIcons } from './nav-icons';
 export function SideNav(): React.JSX.Element {
   const pathname = usePathname();
   const { user } = useUser();
+  const [unreadCount, setUnreadCount] = React.useState(0);
+
+  // Get auth token
+  const getAuthToken = () => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('auth-token')
+    }
+    return null
+  }
+
+  // Fetch unread message count
+  const fetchUnreadCount = React.useCallback(async () => {
+    try {
+      const token = getAuthToken()
+      
+      if (!token) {
+        return
+      }
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001'}/api/messages/unread-count`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setUnreadCount(data.data?.count || 0)
+      }
+    } catch (error) {
+      // Silently fail for unread count
+    }
+  }, [])
+
+  // Load unread count on mount
+  React.useEffect(() => {
+    if (user) {
+      fetchUnreadCount()
+    }
+  }, [user, fetchUnreadCount])
 
   // Filter nav items based on user role
   const filteredNavItems = React.useMemo(() => {
@@ -86,7 +129,7 @@ export function SideNav(): React.JSX.Element {
       </Stack>
       <Divider sx={{ borderColor: 'var(--mui-palette-neutral-700)' }} />
       <Box component="nav" sx={{ flex: '1 1 auto', p: '12px' }}>
-        {renderNavItems({ pathname, items: filteredNavItems })}
+        {renderNavItems({ pathname, items: filteredNavItems, unreadCount })}
       </Box>
       <Divider sx={{ borderColor: 'var(--mui-palette-neutral-700)' }} />
       <Stack spacing={2} sx={{ p: '12px' }}>
@@ -108,11 +151,11 @@ export function SideNav(): React.JSX.Element {
   );
 }
 
-function renderNavItems({ items = [], pathname }: { items?: NavItemConfig[]; pathname: string }): React.JSX.Element {
+function renderNavItems({ items = [], pathname, unreadCount }: { items?: NavItemConfig[]; pathname: string; unreadCount: number }): React.JSX.Element {
   const children = items.reduce((acc: React.ReactNode[], curr: NavItemConfig): React.ReactNode[] => {
     const { key, ...item } = curr;
 
-    acc.push(<NavItem key={key} pathname={pathname} {...item} />);
+    acc.push(<NavItem key={key} pathname={pathname} unreadCount={unreadCount} {...item} />);
 
     return acc;
   }, []);
@@ -126,9 +169,10 @@ function renderNavItems({ items = [], pathname }: { items?: NavItemConfig[]; pat
 
 interface NavItemProps extends Omit<NavItemConfig, 'items'> {
   pathname: string;
+  unreadCount: number;
 }
 
-function NavItem({ disabled, external, href, icon, matcher, pathname, title }: NavItemProps): React.JSX.Element {
+function NavItem({ disabled, external, href, icon, matcher, pathname, title, unreadCount }: NavItemProps): React.JSX.Element {
   const active = isNavItemActive({ disabled, external, href, matcher, pathname });
   const Icon = icon ? navIcons[icon] : null;
 
@@ -165,11 +209,13 @@ function NavItem({ disabled, external, href, icon, matcher, pathname, title }: N
       >
         <Box sx={{ alignItems: 'center', display: 'flex', justifyContent: 'center', flex: '0 0 auto' }}>
           {Icon ? (
-            <Icon
-              fill={active ? 'var(--NavItem-icon-active-color)' : 'var(--NavItem-icon-color)'}
-              fontSize="var(--icon-fontSize-md)"
-              weight={active ? 'fill' : undefined}
-            />
+            <MessageBadge unreadCount={title === 'Messages' ? unreadCount : 0}>
+              <Icon
+                fill={active ? 'var(--NavItem-icon-active-color)' : 'var(--NavItem-icon-color)'}
+                fontSize="var(--icon-fontSize-md)"
+                weight={active ? 'fill' : undefined}
+              />
+            </MessageBadge>
           ) : null}
         </Box>
         <Box sx={{ flex: '1 1 auto' }}>

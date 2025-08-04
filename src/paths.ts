@@ -8,5 +8,6 @@ export const paths = {
     taskTypes: '/dashboard/task-types',
     tasks: '/dashboard/tasks',
     myTasks: '/dashboard/my-tasks',
+    messages: '/dashboard/messages',
   },
 } as const;
