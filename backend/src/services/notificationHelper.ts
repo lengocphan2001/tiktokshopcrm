@@ -16,8 +16,6 @@ export class NotificationHelper {
 
   async sendTaskCreatedNotification(task: any, createdBy: any) {
     try {
-      console.log('Creating notification for task:', task.id)
-      
       // Notify the assignee about the new task
       const notification = await this.notificationService.createNotification({
         userId: task.assigneeId,
@@ -32,8 +30,6 @@ export class NotificationHelper {
         },
       })
 
-      console.log('Notification created in database:', notification.id)
-
       // Send real-time notification if WebSocket service is available
       if (this.wsService) {
         const payload: NotificationPayload = {
@@ -46,10 +42,7 @@ export class NotificationHelper {
           data: notification.data ? JSON.parse(notification.data) : undefined,
         }
 
-        console.log('Sending WebSocket notification to user:', task.assigneeId)
         this.wsService.sendNotificationToUser(task.assigneeId, payload)
-      } else {
-        console.log('WebSocket service not available, notification stored in database only')
       }
     } catch (error) {
       console.error('Error sending task created notification:', error)
@@ -59,8 +52,6 @@ export class NotificationHelper {
 
   async sendTaskUpdatedNotification(task: any, updatedBy: any, previousData?: any) {
     try {
-      console.log('Creating notification for task update:', task.id)
-      
       // Notify the assignee about task updates
       const notification = await this.notificationService.createNotification({
         userId: task.assigneeId,
@@ -75,8 +66,6 @@ export class NotificationHelper {
         },
       })
 
-      console.log('Update notification created in database:', notification.id)
-
       // Send real-time notification if WebSocket service is available
       if (this.wsService) {
         const payload: NotificationPayload = {
@@ -89,7 +78,6 @@ export class NotificationHelper {
           data: notification.data ? JSON.parse(notification.data) : undefined,
         }
 
-        console.log('Sending WebSocket update notification to user:', task.assigneeId)
         this.wsService.sendNotificationToUser(task.assigneeId, payload)
       }
     } catch (error) {
@@ -100,14 +88,11 @@ export class NotificationHelper {
 
   async sendTaskStatusChangedNotification(task: any, updatedBy: any, previousStatus: string) {
     try {
-      console.log('Creating notification for status change:', task.id)
-      
-      // Notify the task creator about status changes
       const notification = await this.notificationService.createNotification({
-        userId: task.createdById,
+        userId: task.assigneeId,
         type: 'TASK_STATUS_CHANGED' as any,
-        title: 'Task Status Updated',
-        message: `${updatedBy.firstName} ${updatedBy.lastName} has updated the status of task "${task.name}" from ${previousStatus} to ${task.status}`,
+        title: 'Task Status Changed',
+        message: `${updatedBy.firstName} ${updatedBy.lastName} has changed the status of task "${task.name}" from ${previousStatus} to ${task.status}`,
         taskId: task.id,
         data: {
           taskName: task.name,
@@ -117,9 +102,6 @@ export class NotificationHelper {
         },
       })
 
-      console.log('Status change notification created in database:', notification.id)
-
-      // Send real-time notification if WebSocket service is available
       if (this.wsService) {
         const payload: NotificationPayload = {
           id: notification.id,
@@ -131,25 +113,20 @@ export class NotificationHelper {
           data: notification.data ? JSON.parse(notification.data) : undefined,
         }
 
-        console.log('Sending WebSocket status notification to user:', task.createdById)
-        this.wsService.sendNotificationToUser(task.createdById, payload)
+        this.wsService.sendNotificationToUser(task.assigneeId, payload)
       }
     } catch (error) {
       console.error('Error sending task status changed notification:', error)
-      // Don't throw the error to avoid breaking the task status update
     }
   }
 
   async sendTaskResultUpdatedNotification(task: any, updatedBy: any) {
     try {
-      console.log('Creating notification for result update:', task.id)
-      
-      // Notify the task creator about result updates
       const notification = await this.notificationService.createNotification({
-        userId: task.createdById,
+        userId: task.assigneeId,
         type: 'TASK_RESULT_UPDATED' as any,
         title: 'Task Result Updated',
-        message: `${updatedBy.firstName} ${updatedBy.lastName} has updated the result for task "${task.name}"`,
+        message: `${updatedBy.firstName} ${updatedBy.lastName} has updated the result for task: "${task.name}"`,
         taskId: task.id,
         data: {
           taskName: task.name,
@@ -158,9 +135,6 @@ export class NotificationHelper {
         },
       })
 
-      console.log('Result update notification created in database:', notification.id)
-
-      // Send real-time notification if WebSocket service is available
       if (this.wsService) {
         const payload: NotificationPayload = {
           id: notification.id,
@@ -172,36 +146,62 @@ export class NotificationHelper {
           data: notification.data ? JSON.parse(notification.data) : undefined,
         }
 
-        console.log('Sending WebSocket result notification to user:', task.createdById)
-        this.wsService.sendNotificationToUser(task.createdById, payload)
+        this.wsService.sendNotificationToUser(task.assigneeId, payload)
       }
     } catch (error) {
       console.error('Error sending task result updated notification:', error)
-      // Don't throw the error to avoid breaking the task result update
+    }
+  }
+
+  async sendTaskAssignedNotification(task: any, assignedBy: any) {
+    try {
+      const notification = await this.notificationService.createNotification({
+        userId: task.assigneeId,
+        type: 'TASK_ASSIGNED' as any,
+        title: 'Task Assigned',
+        message: `${assignedBy.firstName} ${assignedBy.lastName} has assigned you the task: "${task.name}"`,
+        taskId: task.id,
+        data: {
+          taskName: task.name,
+          assignedBy: `${assignedBy.firstName} ${assignedBy.lastName}`,
+          dueDate: task.endDate,
+        },
+      })
+
+      if (this.wsService) {
+        const payload: NotificationPayload = {
+          id: notification.id,
+          type: notification.type,
+          title: notification.title,
+          message: notification.message,
+          taskId: notification.taskId || undefined,
+          createdAt: notification.createdAt,
+          data: notification.data ? JSON.parse(notification.data) : undefined,
+        }
+
+        this.wsService.sendNotificationToUser(task.assigneeId, payload)
+      }
+    } catch (error) {
+      console.error('Error sending task assigned notification:', error)
     }
   }
 
   private getTaskChanges(previousData: any, currentData: any): any {
-    if (!previousData) return {}
-
     const changes: any = {}
     
-    if (previousData.name !== currentData.name) {
-      changes.name = { from: previousData.name, to: currentData.name }
+    if (previousData && currentData) {
+      const fields = ['name', 'description', 'startDate', 'endDate', 'status', 'result']
+      
+      fields.forEach(field => {
+        if (previousData[field] !== currentData[field]) {
+          changes[field] = {
+            from: previousData[field],
+            to: currentData[field]
+          }
+        }
+      })
     }
     
-    if (previousData.description !== currentData.description) {
-      changes.description = { from: previousData.description, to: currentData.description }
-    }
-    
-    if (previousData.startDate !== currentData.startDate) {
-      changes.startDate = { from: previousData.startDate, to: currentData.startDate }
-    }
-    
-    if (previousData.endDate !== currentData.endDate) {
-      changes.endDate = { from: previousData.endDate, to: currentData.endDate }
-    }
-
     return changes
   }
 } 

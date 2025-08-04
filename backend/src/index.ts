@@ -23,9 +23,6 @@ export const wsService = new WebSocketService(server);
 // Set up the global notification helper with WebSocket service
 globalNotificationHelper.setWebSocketService(wsService);
 
-console.log('🚀 WebSocket service initialized');
-console.log('🔔 Global notification helper configured');
-
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -39,8 +36,19 @@ const authLimiter = rateLimit({
   message: 'Too many authentication attempts, please try again later.'
 });
 
+// CORS configuration
+const corsOptions = {
+  origin: process.env.NODE_ENV === 'production' 
+    ? ['https://yourdomain.com'] // Replace with your production domain
+    : ['http://localhost:3000', 'http://127.0.0.1:3000'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  optionsSuccessStatus: 200
+};
+
 // Middleware
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(limiter);

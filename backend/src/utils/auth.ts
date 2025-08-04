@@ -1,27 +1,26 @@
-const bcrypt = require('bcryptjs')
 import jwt from 'jsonwebtoken'
-import { prisma } from '../config/database'
-import { JWTPayload } from '../types/user'
+import bcrypt from 'bcryptjs'
+import { PrismaClient } from '@prisma/client'
 
+const prisma = new PrismaClient()
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d'
 
 export const hashPassword = async (password: string): Promise<string> => {
-  const saltRounds = 12
-  return bcrypt.hash(password, saltRounds)
+  const saltRounds = 10
+  return await bcrypt.hash(password, saltRounds)
 }
 
 export const comparePassword = async (password: string, hashedPassword: string): Promise<boolean> => {
-  return bcrypt.compare(password, hashedPassword)
+  return await bcrypt.compare(password, hashedPassword)
 }
 
-export const generateToken = (payload: JWTPayload): string => {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN as any })
+export const generateToken = (payload: any): string => {
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' })
 }
 
-export const verifyToken = (token: string): JWTPayload | null => {
+export const verifyToken = (token: string): any => {
   try {
-    return jwt.verify(token, JWT_SECRET) as JWTPayload
+    return jwt.verify(token, JWT_SECRET)
   } catch (error) {
     return null
   }
@@ -42,28 +41,21 @@ export const authenticateUser = async (email: string, password: string) => {
       }
     })
 
-    console.log('Found user:', user) // Debug log
-
     if (!user) {
-      console.log('User not found for email:', email)
       return null
     }
 
     if (!user.isActive) {
-      console.log('User is inactive:', email)
       return null
     }
 
     const isValidPassword = await comparePassword(password, user.password)
-    console.log('Password valid:', isValidPassword) // Debug log
 
     if (!isValidPassword) {
-      console.log('Invalid password for user:', email)
       return null
     }
 
     const { password: _, ...userWithoutPassword } = user
-    console.log('Returning user:', userWithoutPassword) // Debug log
     return userWithoutPassword
   } catch (error) {
     console.error('Authentication error:', error)
@@ -105,8 +97,6 @@ export const requireAuth = async (token: string | undefined) => {
       }
     })
 
-    console.log('requireAuth - Found user:', user) // Debug log
-
     if (!user) {
       throw new Error('User not found')
     }
@@ -117,7 +107,6 @@ export const requireAuth = async (token: string | undefined) => {
 
     return user
   } catch (error) {
-    console.error('requireAuth error:', error)
     throw error
   }
 }
@@ -128,6 +117,6 @@ export const requireAdmin = async (token: string | undefined) => {
   if (!isAdmin(user.role)) {
     throw new Error('Admin access required')
   }
-
+  
   return user
 } 

@@ -75,7 +75,7 @@ const createNotificationSound = () => {
     oscillator.start(audioContext.currentTime)
     oscillator.stop(audioContext.currentTime + 0.3)
   } catch (error) {
-    console.log('Audio notification not supported:', error)
+    // Audio notification not supported
   }
 }
 
@@ -84,13 +84,24 @@ export const NotificationAlert: React.FC = () => {
   const [open, setOpen] = React.useState(false)
   const [currentNotification, setCurrentNotification] = React.useState<Notification | null>(null)
   const [lastNotificationId, setLastNotificationId] = React.useState<string | null>(null)
+  const [initialLoadComplete, setInitialLoadComplete] = React.useState(false)
+  const [initialNotificationIds, setInitialNotificationIds] = React.useState<Set<string>>(new Set())
+
+  // Track initial notifications to avoid showing alerts for existing ones
+  React.useEffect(() => {
+    if (notifications.length > 0 && !initialLoadComplete) {
+      const initialIds = new Set(notifications.map(n => n.id))
+      setInitialNotificationIds(initialIds)
+      setInitialLoadComplete(true)
+    }
+  }, [notifications, initialLoadComplete])
 
   React.useEffect(() => {
-    if (notifications.length > 0) {
+    if (notifications.length > 0 && initialLoadComplete) {
       const latestNotification = notifications[0]
       
-      // Only show alert for new notifications (not already shown)
-      if (latestNotification.id !== lastNotificationId) {
+      // Only show alert for truly new notifications (not from initial load)
+      if (latestNotification.id !== lastNotificationId && !initialNotificationIds.has(latestNotification.id)) {
         setCurrentNotification(latestNotification)
         setLastNotificationId(latestNotification.id)
         setOpen(true)
@@ -99,7 +110,7 @@ export const NotificationAlert: React.FC = () => {
         createNotificationSound()
       }
     }
-  }, [notifications, lastNotificationId])
+  }, [notifications, lastNotificationId, initialLoadComplete, initialNotificationIds])
 
   const handleClose = (event?: React.SyntheticEvent | Event, reason?: string) => {
     if (reason === 'clickaway') {
@@ -111,7 +122,6 @@ export const NotificationAlert: React.FC = () => {
   const handleNotificationClick = () => {
     if (currentNotification?.taskId) {
       // You can implement navigation here
-      console.log('Navigate to task:', currentNotification.taskId)
     }
     setOpen(false)
   }

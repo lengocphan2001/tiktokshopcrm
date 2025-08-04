@@ -28,6 +28,7 @@ interface Notification {
   taskId?: string
   createdAt: Date
   data?: any
+  status?: 'UNREAD' | 'READ'
 }
 
 const getNotificationColor = (type: string) => {
@@ -76,18 +77,34 @@ export const NotificationBell: React.FC = () => {
     setAnchorEl(null)
   }
 
-  const handleNotificationClick = (notification: Notification) => {
-    markNotificationAsRead(notification.id)
-    
-    // If notification has a taskId, navigate to the task
-    if (notification.taskId) {
-      // You can implement navigation here
-      console.log('Navigate to task:', notification.taskId)
+  const handleNotificationClick = async (notification: Notification) => {
+    try {
+      // Don't mark as read if already read
+      if (notification.status === 'READ') {
+        // If notification has a taskId, navigate to the task
+        if (notification.taskId) {
+          // You can implement navigation here
+        }
+        return
+      }
+
+      await markNotificationAsRead(notification.id)
+      
+      // If notification has a taskId, navigate to the task
+      if (notification.taskId) {
+        // You can implement navigation here
+      }
+    } catch (error) {
+      console.error('Error marking notification as read:', error)
     }
   }
 
-  const handleMarkAllRead = () => {
-    markAllNotificationsAsRead()
+  const handleMarkAllRead = async () => {
+    try {
+      await markAllNotificationsAsRead()
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error)
+    }
   }
 
   const open = Boolean(anchorEl)
@@ -167,6 +184,9 @@ export const NotificationBell: React.FC = () => {
                       '&:hover': {
                         backgroundColor: 'action.hover',
                       },
+                      backgroundColor: notification.status === 'UNREAD' ? 'action.hover' : 'transparent',
+                      opacity: notification.status === 'READ' ? 0.7 : 1,
+                      cursor: notification.status === 'READ' ? 'default' : 'pointer',
                     }}
                   >
                     <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
@@ -174,22 +194,45 @@ export const NotificationBell: React.FC = () => {
                         <Typography variant="body2" sx={{ mr: 1 }}>
                           {getNotificationIcon(notification.type)}
                         </Typography>
-                        <Typography variant="subtitle2" sx={{ flexGrow: 1 }}>
+                        <Typography 
+                          variant="subtitle2" 
+                          sx={{ 
+                            flexGrow: 1,
+                            fontWeight: notification.status === 'UNREAD' ? 'bold' : 'normal',
+                            color: notification.status === 'READ' ? 'text.secondary' : 'text.primary',
+                          }}
+                        >
                           {notification.title}
                         </Typography>
                         <Chip
                           label={notification.type.replace('_', ' ')}
                           size="small"
                           color={getNotificationColor(notification.type) as any}
-                          sx={{ fontSize: '0.7rem' }}
+                          sx={{ 
+                            fontSize: '0.7rem',
+                            opacity: notification.status === 'READ' ? 0.6 : 1,
+                          }}
                         />
                       </Box>
                       
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                      <Typography 
+                        variant="body2" 
+                        color="text.secondary" 
+                        sx={{ 
+                          mb: 1,
+                          opacity: notification.status === 'READ' ? 0.7 : 1,
+                        }}
+                      >
                         {notification.message}
                       </Typography>
                       
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography 
+                        variant="caption" 
+                        color="text.secondary"
+                        sx={{
+                          opacity: notification.status === 'READ' ? 0.6 : 1,
+                        }}
+                      >
                         {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
                       </Typography>
                     </Box>

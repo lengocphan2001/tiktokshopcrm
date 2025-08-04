@@ -53,16 +53,21 @@ export class TaskController {
 
       // Get the previous task data for comparison
       const previousTask = await this.taskService.getTaskById(id)
-      
+      if (!previousTask) {
+        res.status(404).json({
+          success: false,
+          message: 'Task not found',
+        })
+        return
+      }
+
       const task = await this.taskService.updateTask(id, data, updatedById)
 
-      // Send notification to the assignee about the update (non-blocking)
-      if (previousTask) {
-        try {
-          await globalNotificationHelper.sendTaskUpdatedNotification(task, req.user!, previousTask)
-        } catch (notificationError) {
-          console.error('Notification error (non-blocking):', notificationError)
-        }
+      // Send notification about the update
+      try {
+        await globalNotificationHelper.sendTaskUpdatedNotification(task, req.user!, previousTask)
+      } catch (notificationError) {
+        console.error('Notification error (non-blocking):', notificationError)
       }
 
       res.json({
@@ -89,7 +94,6 @@ export class TaskController {
   async deleteTask(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params
-
       await this.taskService.deleteTask(id)
 
       res.json({
@@ -108,7 +112,6 @@ export class TaskController {
   async getTaskById(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params
-
       const task = await this.taskService.getTaskById(id)
 
       if (!task) {
@@ -134,9 +137,18 @@ export class TaskController {
 
   async getTasks(req: Request, res: Response): Promise<void> {
     try {
-      const params = req.body as TaskPaginationInput
+      const { page = 1, limit = 10, status, assigneeId, createdById } = req.query
+      const filters: any = {}
 
-      const tasks = await this.taskService.getTasks(params)
+      if (status) filters.status = status
+      if (assigneeId) filters.assigneeId = assigneeId
+      if (createdById) filters.createdById = createdById
+
+      const tasks = await this.taskService.getTasks(
+        Number(page),
+        Number(limit),
+        filters
+      )
 
       res.json({
         success: true,
@@ -179,17 +191,21 @@ export class TaskController {
 
       // Get the previous task data for status comparison
       const previousTask = await this.taskService.getTaskById(id)
-      const previousStatus = previousTask?.status
+      if (!previousTask) {
+        res.status(404).json({
+          success: false,
+          message: 'Task not found',
+        })
+        return
+      }
 
       const task = await this.taskService.updateTaskStatus(id, status, updatedById)
 
-      // Send notification to the task creator about status change (non-blocking)
-      if (previousStatus && previousStatus !== status) {
-        try {
-          await globalNotificationHelper.sendTaskStatusChangedNotification(task, req.user!, previousStatus)
-        } catch (notificationError) {
-          console.error('Notification error (non-blocking):', notificationError)
-        }
+      // Send notification about the status change
+      try {
+        await globalNotificationHelper.sendTaskStatusChangedNotification(task, req.user!, previousTask.status)
+      } catch (notificationError) {
+        console.error('Notification error (non-blocking):', notificationError)
       }
 
       res.json({
@@ -199,10 +215,17 @@ export class TaskController {
       })
     } catch (error: any) {
       console.error('Update task status error:', error)
-      res.status(400).json({
-        success: false,
-        message: error.message || 'Failed to update task status',
-      })
+      if (error instanceof Error) {
+        res.status(400).json({
+          success: false,
+          message: error.message || 'Failed to update task status',
+        })
+      } else {
+        res.status(400).json({
+          success: false,
+          message: 'Failed to update task status',
+        })
+      }
     }
   }
 
@@ -214,7 +237,7 @@ export class TaskController {
 
       const task = await this.taskService.updateTaskResult(id, result, updatedById)
 
-      // Send notification to the task creator about result update (non-blocking)
+      // Send notification about the result update
       try {
         await globalNotificationHelper.sendTaskResultUpdatedNotification(task, req.user!)
       } catch (notificationError) {
@@ -228,10 +251,17 @@ export class TaskController {
       })
     } catch (error: any) {
       console.error('Update task result error:', error)
-      res.status(400).json({
-        success: false,
-        message: error.message || 'Failed to update task result',
-      })
+      if (error instanceof Error) {
+        res.status(400).json({
+          success: false,
+          message: error.message || 'Failed to update task result',
+        })
+      } else {
+        res.status(400).json({
+          success: false,
+          message: 'Failed to update task result',
+        })
+      }
     }
   }
 
