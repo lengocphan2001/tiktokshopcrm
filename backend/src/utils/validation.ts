@@ -6,6 +6,11 @@ export const createUserSchema = z.object({
   email: z.string().email('Invalid email address'),
   phone: z.string().optional(),
   password: z.string().min(8, 'Password must be at least 8 characters'),
+  avatar: z.string().optional(),
+  bankAccount: z.string().optional(),
+  about: z.string().optional(),
+  address: z.string().optional(),
+  dateOfBirth: z.string().optional(),
   role: z.enum(['ADMIN', 'USER']).default('USER'),
   status: z.enum(['ACTIVE', 'INACTIVE', 'SUSPENDED']).default('ACTIVE'),
 })

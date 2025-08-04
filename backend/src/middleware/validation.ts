@@ -37,6 +37,9 @@ export const validateRequest = (schema: ZodSchema) => {
       // But be more lenient - check if body exists and has content
       if (!req.body) {
         console.log('WARNING: Request body is null or undefined')
+        console.log('Raw body:', req.body)
+        console.log('Content-Type:', req.headers['content-type'])
+        console.log('Content-Length:', req.headers['content-length'])
         return res.status(400).json({
           success: false,
           message: 'Request body is required',
@@ -45,7 +48,8 @@ export const validateRequest = (schema: ZodSchema) => {
       }
       
       // Check if body is an empty object (but not null/undefined)
-      if (typeof req.body === 'object' && Object.keys(req.body).length === 0) {
+      // For PUT and POST requests, allow empty objects as they might be valid
+      if (typeof req.body === 'object' && Object.keys(req.body).length === 0 && req.method !== 'PUT' && req.method !== 'POST') {
         console.log('WARNING: Request body is an empty object')
         return res.status(400).json({
           success: false,

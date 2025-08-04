@@ -16,4 +16,12 @@ export const API_ENDPOINTS = {
     ACTIVATE: (id: string) => `/users/${id}/activate`,
     DEACTIVATE: (id: string) => `/users/${id}/deactivate`,
   },
+  TASK_TYPES: {
+    LIST: '/task-types',
+    CREATE: '/task-types',
+    UPDATE: (id: string) => `/task-types/${id}`,
+    DELETE: (id: string) => `/task-types/${id}`,
+    ACTIVATE: (id: string) => `/task-types/${id}/activate`,
+    DEACTIVATE: (id: string) => `/task-types/${id}/deactivate`,
+  },
 } as const; 

@@ -16,6 +16,14 @@ export enum TaskStatus {
   CANCELLED = 'CANCELLED',
 }
 
+export interface JWTPayload {
+  userId: string;
+  email: string;
+  role: UserRole;
+  iat?: number;
+  exp?: number;
+}
+
 export interface User {
   id: string
   firstName: string

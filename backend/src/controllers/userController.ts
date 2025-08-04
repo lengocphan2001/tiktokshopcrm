@@ -42,9 +42,17 @@ export class UserController {
 
   async updateUser(req: AuthenticatedRequest, res: Response) {
     try {
+      console.log('=== UPDATE USER CONTROLLER DEBUG ===');
+      console.log('Request body:', req.body);
+      console.log('Request params:', req.params);
+      
       const { id } = req.params
       const data: UpdateUserInput = req.body
       const updatedBy = req.user!.id
+
+      console.log('User ID:', id);
+      console.log('Update data:', data);
+      console.log('Updated by:', updatedBy);
 
       // Check if user exists
       const existingUser = await this.userService.getUserById(id)
@@ -54,6 +62,8 @@ export class UserController {
           message: 'User not found'
         })
       }
+
+      console.log('Existing user:', existingUser);
 
       // Check if email is being updated and if it already exists
       if (data.email && data.email !== existingUser.email) {
@@ -67,6 +77,9 @@ export class UserController {
       }
 
       const user = await this.userService.updateUser(id, data, updatedBy)
+
+      console.log('Updated user response:', user);
+      console.log('=====================================');
 
       return res.status(200).json({
         success: true,

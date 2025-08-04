@@ -9,10 +9,26 @@ export class UserService {
   async createUser(data: CreateUserInput, createdBy: string): Promise<User> {
     const hashedPassword = await bcrypt.hash(data.password, 10)
 
+    // Handle dateOfBirth properly - convert empty string to null
+    let dateOfBirth = null;
+    if (data.dateOfBirth && data.dateOfBirth.trim() !== '') {
+      dateOfBirth = new Date(data.dateOfBirth);
+    }
+
     const user = await prisma.user.create({
       data: {
-        ...data,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        phone: data.phone || null,
         password: hashedPassword,
+        avatar: data.avatar || null,
+        bankAccount: data.bankAccount || null,
+        about: data.about || null,
+        address: data.address || null,
+        dateOfBirth: dateOfBirth,
+        role: data.role,
+        status: data.status,
         createdBy,
       },
     })
@@ -21,23 +37,66 @@ export class UserService {
   }
 
   async updateUser(id: string, data: UpdateUserInput, updatedBy: string): Promise<User> {
-    const updateData: any = { ...data, updatedBy }
+    console.log('=== UPDATE USER DEBUG ===');
+    console.log('User ID:', id);
+    console.log('Update data:', data);
+    console.log('Updated by:', updatedBy);
+    
+    // Filter out undefined values and ensure field names match Prisma schema
+    const cleanData: any = {};
+    Object.entries(data).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        cleanData[key] = value;
+      }
+    });
+    
+    console.log('Clean data (filtered):', cleanData);
     
     // Handle dateOfBirth properly - convert empty string to null, valid date to Date object
     if (data.dateOfBirth) {
       if (data.dateOfBirth.trim() === '') {
-        updateData.dateOfBirth = null;
+        cleanData.dateOfBirth = null;
       } else {
-        updateData.dateOfBirth = new Date(data.dateOfBirth);
+        cleanData.dateOfBirth = new Date(data.dateOfBirth);
       }
-    } else {
-      updateData.dateOfBirth = null;
+    } else if (data.dateOfBirth === '') {
+      cleanData.dateOfBirth = null;
     }
+    
+    const updateData: any = { 
+      ...cleanData, 
+      updatedBy,
+      updatedAt: new Date() // Force update timestamp
+    }
+
+    console.log('Final update data:', updateData);
+
+    // Test with individual field updates to see which ones work
+    console.log('Testing individual field updates...');
+    
+    const testUpdates: any = {};
+    if (updateData.firstName) testUpdates.firstName = updateData.firstName;
+    if (updateData.lastName) testUpdates.lastName = updateData.lastName;
+    if (updateData.email) testUpdates.email = updateData.email;
+    if (updateData.phone) testUpdates.phone = updateData.phone;
+    if (updateData.avatar) testUpdates.avatar = updateData.avatar;
+    if (updateData.bankAccount) testUpdates.bankAccount = updateData.bankAccount;
+    if (updateData.about) testUpdates.about = updateData.about;
+    if (updateData.address) testUpdates.address = updateData.address;
+    if (updateData.dateOfBirth !== undefined) testUpdates.dateOfBirth = updateData.dateOfBirth;
+    if (updateData.role) testUpdates.role = updateData.role;
+    if (updateData.status) testUpdates.status = updateData.status;
+    if (updateData.isActive !== undefined) testUpdates.isActive = updateData.isActive;
+    
+    console.log('Test updates:', testUpdates);
 
     const user = await prisma.user.update({
       where: { id },
-      data: updateData,
+      data: testUpdates,
     })
+
+    console.log('Updated user from database:', user);
+    console.log('========================');
 
     return this.formatUserResponse(user)
   }
@@ -141,18 +200,18 @@ export class UserService {
   }
 
   private formatUserResponse(user: any): User {
-    // Ensure we're getting the actual values from the database
+    // Convert null values to empty strings for frontend display
     const formattedUser = {
       id: user.id,
       firstName: user.firstName,
       lastName: user.lastName,
       email: user.email,
-      phone: user.phone, // This should be "0978471074" from database
-      avatar: user.avatar, // This should be "" from database
-      bankAccount: user.bankAccount, // This should be "" from database
-      about: user.about, // This should be "" from database
-      address: user.address, // This should be "Kim Giang, Dai Kim, Hoang Main" from database
-      dateOfBirth: user.dateOfBirth, // This should be null from database
+      phone: user.phone || '',
+      avatar: user.avatar || '',
+      bankAccount: user.bankAccount || '',
+      about: user.about || '',
+      address: user.address || '',
+      dateOfBirth: user.dateOfBirth ? user.dateOfBirth.toISOString().split('T')[0] : '', // Convert Date to YYYY-MM-DD format
       role: user.role,
       status: user.status,
       isActive: user.isActive,

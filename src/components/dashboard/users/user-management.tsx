@@ -12,6 +12,7 @@ import {
   DialogContent,
   DialogTitle,
   FormControl,
+  Grid,
   IconButton,
   InputLabel,
   MenuItem,
@@ -37,6 +38,8 @@ import { EyeSlashIcon } from '@phosphor-icons/react/dist/ssr/EyeSlash';
 
 import { useUser } from '@/hooks/use-user';
 import { usersApi } from '@/lib/api/users';
+import { ModernDatePicker } from '@/components/core/date-picker';
+import dayjs from 'dayjs';
 
 interface User {
   id: string;
@@ -44,11 +47,19 @@ interface User {
   lastName: string;
   email: string;
   phone?: string;
+  avatar?: string;
+  bankAccount?: string;
+  about?: string;
+  address?: string;
+  dateOfBirth?: string;
   role: 'ADMIN' | 'USER';
   status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
   isActive: boolean;
-  createdAt: string;
   lastLoginAt?: string;
+  createdAt: string;
+  updatedAt: string;
+  createdBy?: string;
+  updatedBy?: string;
 }
 
 interface CreateUserData {
@@ -57,6 +68,11 @@ interface CreateUserData {
   email: string;
   phone?: string;
   password: string;
+  avatar?: string;
+  bankAccount?: string;
+  about?: string;
+  address?: string;
+  dateOfBirth?: string;
   role: 'ADMIN' | 'USER';
   status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
 }
@@ -66,6 +82,7 @@ export function UserManagement(): React.JSX.Element {
   const [users, setUsers] = React.useState<User[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const [success, setSuccess] = React.useState<string | null>(null);
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(10);
   const [totalUsers, setTotalUsers] = React.useState(0);
@@ -76,19 +93,144 @@ export function UserManagement(): React.JSX.Element {
   // Dialog states
   const [createDialogOpen, setCreateDialogOpen] = React.useState(false);
   const [editDialogOpen, setEditDialogOpen] = React.useState(false);
+  const [viewDialogOpen, setViewDialogOpen] = React.useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
   const [selectedUser, setSelectedUser] = React.useState<User | null>(null);
+  const [viewingUser, setViewingUser] = React.useState<User | null>(null);
+  const [deletingUser, setDeletingUser] = React.useState<User | null>(null);
   const [createUserData, setCreateUserData] = React.useState<CreateUserData>({
     firstName: '',
     lastName: '',
     email: '',
     phone: '',
     password: '',
+    avatar: '',
+    bankAccount: '',
+    about: '',
+    address: '',
+    dateOfBirth: '',
     role: 'USER',
     status: 'ACTIVE',
   });
+  const [editUserData, setEditUserData] = React.useState<Partial<CreateUserData>>({});
+
+  // Validation states
+  const [createErrors, setCreateErrors] = React.useState<Record<string, string>>({});
+  const [editErrors, setEditErrors] = React.useState<Record<string, string>>({});
 
   // Check if current user is admin
   const isAdmin = currentUser?.role === 'ADMIN';
+
+  // Show success notification and clear after delay
+  const showSuccess = (message: string) => {
+    setSuccess(message);
+    setError(null); // Clear any existing errors
+    setTimeout(() => {
+      setSuccess(null);
+    }, 3000); // Clear after 3 seconds
+  };
+
+  // Validation functions
+  const validateCreateUser = (): boolean => {
+    console.log('=== VALIDATION DEBUG ===');
+    console.log('Validating create user data:', createUserData);
+    console.log('firstName:', createUserData.firstName, 'type:', typeof createUserData.firstName);
+    console.log('lastName:', createUserData.lastName, 'type:', typeof createUserData.lastName);
+    console.log('email:', createUserData.email, 'type:', typeof createUserData.email);
+    console.log('password:', createUserData.password, 'type:', typeof createUserData.password);
+    
+    const errors: Record<string, string> = {};
+
+    // Required fields
+    if (!createUserData.firstName.trim()) {
+      errors.firstName = 'First name is required';
+    } else if (createUserData.firstName.length > 50) {
+      errors.firstName = 'First name must be less than 50 characters';
+    }
+
+    if (!createUserData.lastName.trim()) {
+      errors.lastName = 'Last name is required';
+    } else if (createUserData.lastName.length > 50) {
+      errors.lastName = 'Last name must be less than 50 characters';
+    }
+
+    if (!createUserData.email.trim()) {
+      errors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(createUserData.email)) {
+      errors.email = 'Please enter a valid email address';
+    }
+
+    if (!createUserData.password) {
+      errors.password = 'Password is required';
+    } else if (createUserData.password.length < 8) {
+      errors.password = 'Password must be at least 8 characters';
+    }
+
+    // Optional fields with validation
+    if (createUserData.phone && !/^[\+]?[1-9][\d]{0,15}$/.test(createUserData.phone)) {
+      errors.phone = 'Please enter a valid phone number';
+    }
+
+    if (createUserData.avatar && !/^https?:\/\/.+/.test(createUserData.avatar)) {
+      errors.avatar = 'Avatar must be a valid URL';
+    }
+
+    if (createUserData.dateOfBirth) {
+      const date = new Date(createUserData.dateOfBirth);
+      if (isNaN(date.getTime())) {
+        errors.dateOfBirth = 'Please enter a valid date';
+      } else if (date > new Date()) {
+        errors.dateOfBirth = 'Date of birth cannot be in the future';
+      }
+    }
+
+    setCreateErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const validateEditUser = (): boolean => {
+    const errors: Record<string, string> = {};
+
+    // Required fields
+    if (!editUserData.firstName?.trim()) {
+      errors.firstName = 'First name is required';
+    } else if (editUserData.firstName.length > 50) {
+      errors.firstName = 'First name must be less than 50 characters';
+    }
+
+    if (!editUserData.lastName?.trim()) {
+      errors.lastName = 'Last name is required';
+    } else if (editUserData.lastName.length > 50) {
+      errors.lastName = 'Last name must be less than 50 characters';
+    }
+
+    if (!editUserData.email?.trim()) {
+      errors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editUserData.email)) {
+      errors.email = 'Please enter a valid email address';
+    }
+
+    // Optional fields with validation
+    if (editUserData.phone && !/^[\+]?[1-9][\d]{0,15}$/.test(editUserData.phone)) {
+      errors.phone = 'Please enter a valid phone number';
+    }
+
+    if (editUserData.avatar && !/^https?:\/\/.+/.test(editUserData.avatar)) {
+      errors.avatar = 'Avatar must be a valid URL';
+    }
+
+    if (editUserData.dateOfBirth) {
+      const date = new Date(editUserData.dateOfBirth);
+      if (isNaN(date.getTime())) {
+        errors.dateOfBirth = 'Please enter a valid date';
+      } else if (date > new Date()) {
+        errors.dateOfBirth = 'Date of birth cannot be in the future';
+      }
+    }
+
+    setEditErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   // Debug information
   console.log('Current user:', currentUser);
@@ -136,6 +278,21 @@ export function UserManagement(): React.JSX.Element {
   }, [loadUsers, isAdmin]);
 
   const handleCreateUser = async () => {
+    // Clear any existing messages
+    setError(null);
+    setSuccess(null);
+    
+    // Validate form data
+    if (!validateCreateUser()) {
+      return;
+    }
+
+    console.log('=== CREATE USER DEBUG ===');
+    console.log('Create user data before API call:', createUserData);
+    console.log('Create user data type:', typeof createUserData);
+    console.log('Create user data keys:', Object.keys(createUserData));
+    console.log('Create user data values:', Object.values(createUserData));
+
     try {
       const token = localStorage.getItem('auth-token');
       if (!token) {
@@ -153,10 +310,16 @@ export function UserManagement(): React.JSX.Element {
           email: '',
           phone: '',
           password: '',
+          avatar: '',
+          bankAccount: '',
+          about: '',
+          address: '',
+          dateOfBirth: '',
           role: 'USER',
           status: 'ACTIVE',
         });
         loadUsers();
+        showSuccess('User created successfully!');
       } else {
         setError(response.message || 'Failed to create user');
       }
@@ -166,8 +329,48 @@ export function UserManagement(): React.JSX.Element {
     }
   };
 
-  const handleDeleteUser = async (userId: string) => {
-    if (!window.confirm('Are you sure you want to delete this user?')) return;
+  const handleViewUser = (user: User) => {
+    setViewingUser(user);
+    setViewDialogOpen(true);
+  };
+
+  const handleEditUser = (user: User) => {
+    console.log('=== EDIT USER DEBUG ===');
+    console.log('User to edit:', user);
+    
+    const editData = {
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      phone: user.phone || '',
+      avatar: user.avatar || '',
+      bankAccount: user.bankAccount || '',
+      about: user.about || '',
+      address: user.address || '',
+      dateOfBirth: user.dateOfBirth || '',
+      role: user.role,
+      status: user.status,
+    };
+    
+    console.log('Setting edit data:', editData);
+    
+    setSelectedUser(user);
+    setEditUserData(editData);
+    setEditErrors({});
+    setEditDialogOpen(true);
+  };
+
+  const handleDeleteClick = (user: User) => {
+    setDeletingUser(user);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteUser = async () => {
+    if (!deletingUser) return;
+
+    // Clear any existing messages
+    setError(null);
+    setSuccess(null);
 
     try {
       const token = localStorage.getItem('auth-token');
@@ -176,10 +379,13 @@ export function UserManagement(): React.JSX.Element {
         return;
       }
 
-      const response = await usersApi.deleteUser(token, userId);
+      const response = await usersApi.deleteUser(token, deletingUser.id);
       
       if (response.success) {
+        setDeleteDialogOpen(false);
+        setDeletingUser(null);
         loadUsers();
+        showSuccess('User deleted successfully!');
       } else {
         setError(response.message || 'Failed to delete user');
       }
@@ -189,7 +395,18 @@ export function UserManagement(): React.JSX.Element {
     }
   };
 
-  const handleToggleUserStatus = async (userId: string, currentStatus: boolean) => {
+  const handleUpdateUser = async () => {
+    if (!selectedUser) return;
+
+    // Clear any existing messages
+    setError(null);
+    setSuccess(null);
+
+    // Validate form data
+    if (!validateEditUser()) {
+      return;
+    }
+
     try {
       const token = localStorage.getItem('auth-token');
       if (!token) {
@@ -197,20 +414,42 @@ export function UserManagement(): React.JSX.Element {
         return;
       }
 
-      const response = currentStatus 
-        ? await usersApi.deactivateUser(token, userId)
-        : await usersApi.activateUser(token, userId);
+      // Send all non-undefined values, including empty strings for optional fields
+      const filteredData: any = {};
+      Object.entries(editUserData).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          filteredData[key] = value;
+        }
+      });
+
+      console.log('Sending update data:', filteredData);
+      console.log('Original edit data:', editUserData);
+      console.log('Selected user ID:', selectedUser?.id);
+      console.log('Edit form data keys:', Object.keys(editUserData));
+      console.log('Edit form data values:', Object.values(editUserData));
+      console.log('Edit form data type:', typeof editUserData);
+      console.log('Edit form data is object:', typeof editUserData === 'object');
+      console.log('Edit form data is null:', editUserData === null);
+      console.log('Edit form data is undefined:', editUserData === undefined);
+
+      const response = await usersApi.updateUser(token, selectedUser.id, filteredData);
       
       if (response.success) {
+        setEditDialogOpen(false);
+        setSelectedUser(null);
+        setEditUserData({});
         loadUsers();
+        showSuccess('User updated successfully!');
       } else {
-        setError(response.message || 'Failed to update user status');
+        setError(response.message || 'Failed to update user');
       }
     } catch (error) {
-      setError('Failed to update user status');
-      console.error('Toggle user status error:', error);
+      setError('Failed to update user');
+      console.error('Update user error:', error);
     }
   };
+
+
 
   // Show debug information
   if (!currentUser) {
@@ -251,7 +490,10 @@ export function UserManagement(): React.JSX.Element {
           <Button
             startIcon={<PlusIcon />}
             variant="contained"
-            onClick={() => setCreateDialogOpen(true)}
+            onClick={() => {
+              setCreateErrors({});
+              setCreateDialogOpen(true);
+            }}
           >
             Add User
           </Button>
@@ -303,6 +545,11 @@ export function UserManagement(): React.JSX.Element {
             {error && (
               <Alert severity="error" sx={{ mb: 2 }}>
                 {error}
+              </Alert>
+            )}
+            {success && (
+              <Alert severity="success" sx={{ mb: 2 }}>
+                {success}
               </Alert>
             )}
             
@@ -375,15 +622,22 @@ export function UserManagement(): React.JSX.Element {
                           <Stack direction="row" spacing={1}>
                             <IconButton
                               size="small"
-                              onClick={() => handleToggleUserStatus(user.id, user.isActive)}
-                              color={user.isActive ? 'warning' : 'success'}
+                              onClick={() => handleViewUser(user)}
+                              color="info"
                             >
-                              {user.isActive ? <EyeSlashIcon /> : <EyeIcon />}
+                              <EyeIcon />
+                            </IconButton>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleEditUser(user)}
+                              color="primary"
+                            >
+                              <PencilIcon />
                             </IconButton>
                             <IconButton
                               size="small"
                               color="error"
-                              onClick={() => handleDeleteUser(user.id)}
+                              onClick={() => handleDeleteClick(user)}
                             >
                               <TrashIcon />
                             </IconButton>
@@ -412,71 +666,486 @@ export function UserManagement(): React.JSX.Element {
       </Stack>
 
       {/* Create User Dialog */}
-      <Dialog open={createDialogOpen} onClose={() => setCreateDialogOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog open={createDialogOpen} onClose={() => setCreateDialogOpen(false)} maxWidth="md" fullWidth>
         <DialogTitle>Create New User</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
-            <TextField
-              label="First Name"
-              value={createUserData.firstName}
-              onChange={(e) => setCreateUserData({ ...createUserData, firstName: e.target.value })}
-              fullWidth
-            />
-            <TextField
-              label="Last Name"
-              value={createUserData.lastName}
-              onChange={(e) => setCreateUserData({ ...createUserData, lastName: e.target.value })}
-              fullWidth
-            />
-            <TextField
-              label="Email"
-              type="email"
-              value={createUserData.email}
-              onChange={(e) => setCreateUserData({ ...createUserData, email: e.target.value })}
-              fullWidth
-            />
-            <TextField
-              label="Phone"
-              value={createUserData.phone}
-              onChange={(e) => setCreateUserData({ ...createUserData, phone: e.target.value })}
-              fullWidth
-            />
-            <TextField
-              label="Password"
-              type="password"
-              value={createUserData.password}
-              onChange={(e) => setCreateUserData({ ...createUserData, password: e.target.value })}
-              fullWidth
-            />
-            <FormControl fullWidth>
-              <InputLabel>Role</InputLabel>
-              <Select
-                value={createUserData.role}
-                label="Role"
-                onChange={(e) => setCreateUserData({ ...createUserData, role: e.target.value as 'ADMIN' | 'USER' })}
-              >
-                <MenuItem value="USER">User</MenuItem>
-                <MenuItem value="ADMIN">Admin</MenuItem>
-              </Select>
-            </FormControl>
-            <FormControl fullWidth>
-              <InputLabel>Status</InputLabel>
-              <Select
-                value={createUserData.status}
-                label="Status"
-                onChange={(e) => setCreateUserData({ ...createUserData, status: e.target.value as 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' })}
-              >
-                <MenuItem value="ACTIVE">Active</MenuItem>
-                <MenuItem value="INACTIVE">Inactive</MenuItem>
-                <MenuItem value="SUSPENDED">Suspended</MenuItem>
-              </Select>
-            </FormControl>
+            <Grid container spacing={2}>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  label="First Name"
+                  value={createUserData.firstName}
+                  onChange={(e) => {
+                    console.log('First name changed to:', e.target.value);
+                    setCreateUserData({ ...createUserData, firstName: e.target.value });
+                  }}
+                  fullWidth
+                  error={!!createErrors.firstName}
+                  helperText={createErrors.firstName}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  label="Last Name"
+                  value={createUserData.lastName}
+                  onChange={(e) => setCreateUserData({ ...createUserData, lastName: e.target.value })}
+                  fullWidth
+                  error={!!createErrors.lastName}
+                  helperText={createErrors.lastName}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  label="Email"
+                  type="email"
+                  value={createUserData.email}
+                  onChange={(e) => setCreateUserData({ ...createUserData, email: e.target.value })}
+                  fullWidth
+                  error={!!createErrors.email}
+                  helperText={createErrors.email}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  label="Phone"
+                  value={createUserData.phone}
+                  onChange={(e) => setCreateUserData({ ...createUserData, phone: e.target.value })}
+                  fullWidth
+                  error={!!createErrors.phone}
+                  helperText={createErrors.phone}
+                />
+              </Grid>
+              <Grid size={{ xs: 12 }}>
+                <TextField
+                  label="Password"
+                  type="password"
+                  value={createUserData.password}
+                  onChange={(e) => {
+                    console.log('Password changed to:', e.target.value);
+                    setCreateUserData({ ...createUserData, password: e.target.value });
+                  }}
+                  fullWidth
+                  error={!!createErrors.password}
+                  helperText={createErrors.password}
+                />
+              </Grid>
+              <Grid size={{ xs: 12 }}>
+                <TextField
+                  label="Avatar URL"
+                  value={createUserData.avatar}
+                  onChange={(e) => setCreateUserData({ ...createUserData, avatar: e.target.value })}
+                  fullWidth
+                  error={!!createErrors.avatar}
+                  helperText={createErrors.avatar || "Optional: URL to user's avatar image"}
+                />
+              </Grid>
+              <Grid size={{ xs: 12 }}>
+                <TextField
+                  label="Bank Account"
+                  value={createUserData.bankAccount}
+                  onChange={(e) => setCreateUserData({ ...createUserData, bankAccount: e.target.value })}
+                  fullWidth
+                  helperText="Optional: Bank account information"
+                />
+              </Grid>
+              <Grid size={{ xs: 12 }}>
+                <TextField
+                  label="Address"
+                  value={createUserData.address}
+                  onChange={(e) => setCreateUserData({ ...createUserData, address: e.target.value })}
+                  fullWidth
+                  multiline
+                  rows={2}
+                  helperText="Optional: User's address"
+                />
+              </Grid>
+              <Grid size={{ xs: 12 }}>
+                <TextField
+                  label="About"
+                  value={createUserData.about}
+                  onChange={(e) => setCreateUserData({ ...createUserData, about: e.target.value })}
+                  fullWidth
+                  multiline
+                  rows={3}
+                  helperText="Optional: Brief description about the user"
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <ModernDatePicker
+                  label="Date of Birth"
+                  value={createUserData.dateOfBirth}
+                  onChange={(value) => setCreateUserData({ ...createUserData, dateOfBirth: value })}
+                  error={!!createErrors.dateOfBirth}
+                  helperText={createErrors.dateOfBirth || "Optional: User's date of birth"}
+                  maxDate={dayjs()} // Cannot select future dates
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <FormControl fullWidth>
+                  <InputLabel>Role</InputLabel>
+                  <Select
+                    value={createUserData.role}
+                    label="Role"
+                    onChange={(e) => setCreateUserData({ ...createUserData, role: e.target.value as 'ADMIN' | 'USER' })}
+                  >
+                    <MenuItem value="USER">User</MenuItem>
+                    <MenuItem value="ADMIN">Admin</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <FormControl fullWidth>
+                  <InputLabel>Status</InputLabel>
+                  <Select
+                    value={createUserData.status}
+                    label="Status"
+                    onChange={(e) => setCreateUserData({ ...createUserData, status: e.target.value as 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' })}
+                  >
+                    <MenuItem value="ACTIVE">Active</MenuItem>
+                    <MenuItem value="INACTIVE">Inactive</MenuItem>
+                    <MenuItem value="SUSPENDED">Suspended</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+            </Grid>
           </Stack>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setCreateDialogOpen(false)}>Cancel</Button>
           <Button onClick={handleCreateUser} variant="contained">
             Create User
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* View User Dialog */}
+      <Dialog open={viewDialogOpen} onClose={() => setViewDialogOpen(false)} maxWidth="md" fullWidth>
+        <DialogTitle>User Details</DialogTitle>
+        <DialogContent>
+          {viewingUser && (
+            <Stack spacing={3} sx={{ mt: 1 }}>
+              <Grid container spacing={3}>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      Name
+                    </Typography>
+                    <Typography variant="body1">
+                      {viewingUser.firstName} {viewingUser.lastName}
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      Email
+                    </Typography>
+                    <Typography variant="body1">
+                      {viewingUser.email}
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      Phone
+                    </Typography>
+                    <Typography variant="body1">
+                      {viewingUser.phone || 'Not provided'}
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      Date of Birth
+                    </Typography>
+                    <Typography variant="body1">
+                      {viewingUser.dateOfBirth 
+                        ? new Date(viewingUser.dateOfBirth).toLocaleDateString()
+                        : 'Not provided'}
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      Role
+                    </Typography>
+                    <Chip
+                      label={viewingUser.role}
+                      color={viewingUser.role === 'ADMIN' ? 'primary' : 'default'}
+                      size="small"
+                    />
+                  </Box>
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      Status
+                    </Typography>
+                    <Chip
+                      label={viewingUser.status}
+                      color={
+                        viewingUser.status === 'ACTIVE'
+                          ? 'success'
+                          : viewingUser.status === 'SUSPENDED'
+                          ? 'error'
+                          : 'default'
+                      }
+                      size="small"
+                    />
+                  </Box>
+                </Grid>
+                <Grid size={{ xs: 12 }}>
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      Avatar URL
+                    </Typography>
+                    <Typography variant="body1">
+                      {viewingUser.avatar || 'Not provided'}
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid size={{ xs: 12 }}>
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      Bank Account
+                    </Typography>
+                    <Typography variant="body1">
+                      {viewingUser.bankAccount || 'Not provided'}
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid size={{ xs: 12 }}>
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      Address
+                    </Typography>
+                    <Typography variant="body1">
+                      {viewingUser.address || 'Not provided'}
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid size={{ xs: 12 }}>
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      About
+                    </Typography>
+                    <Typography variant="body1">
+                      {viewingUser.about || 'Not provided'}
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      Created
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {new Date(viewingUser.createdAt).toLocaleDateString()}
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      Last Updated
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {new Date(viewingUser.updatedAt).toLocaleDateString()}
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      Last Login
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {viewingUser.lastLoginAt
+                        ? new Date(viewingUser.lastLoginAt).toLocaleDateString()
+                        : 'Never'}
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      Created By
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {viewingUser.createdBy || 'System'}
+                    </Typography>
+                  </Box>
+                </Grid>
+              </Grid>
+            </Stack>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setViewDialogOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Edit User Dialog */}
+      <Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)} maxWidth="md" fullWidth>
+        <DialogTitle>Edit User</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <Grid container spacing={2}>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  label="First Name"
+                  value={editUserData.firstName || ''}
+                  onChange={(e) => {
+                    console.log('First name changed:', e.target.value);
+                    setEditUserData({ ...editUserData, firstName: e.target.value });
+                  }}
+                  fullWidth
+                  error={!!editErrors.firstName}
+                  helperText={editErrors.firstName}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  label="Last Name"
+                  value={editUserData.lastName || ''}
+                  onChange={(e) => setEditUserData({ ...editUserData, lastName: e.target.value })}
+                  fullWidth
+                  error={!!editErrors.lastName}
+                  helperText={editErrors.lastName}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  label="Email"
+                  type="email"
+                  value={editUserData.email || ''}
+                  onChange={(e) => setEditUserData({ ...editUserData, email: e.target.value })}
+                  fullWidth
+                  error={!!editErrors.email}
+                  helperText={editErrors.email}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  label="Phone"
+                  value={editUserData.phone || ''}
+                  onChange={(e) => setEditUserData({ ...editUserData, phone: e.target.value })}
+                  fullWidth
+                  error={!!editErrors.phone}
+                  helperText={editErrors.phone}
+                />
+              </Grid>
+              <Grid size={{ xs: 12 }}>
+                <TextField
+                  label="Avatar URL"
+                  value={editUserData.avatar || ''}
+                  onChange={(e) => setEditUserData({ ...editUserData, avatar: e.target.value })}
+                  fullWidth
+                  error={!!editErrors.avatar}
+                  helperText={editErrors.avatar || "Optional: URL to user's avatar image"}
+                />
+              </Grid>
+              <Grid size={{ xs: 12 }}>
+                <TextField
+                  label="Bank Account"
+                  value={editUserData.bankAccount || ''}
+                  onChange={(e) => setEditUserData({ ...editUserData, bankAccount: e.target.value })}
+                  fullWidth
+                  helperText="Optional: Bank account information"
+                />
+              </Grid>
+              <Grid size={{ xs: 12 }}>
+                <TextField
+                  label="Address"
+                  value={editUserData.address || ''}
+                  onChange={(e) => setEditUserData({ ...editUserData, address: e.target.value })}
+                  fullWidth
+                  multiline
+                  rows={2}
+                  helperText="Optional: User's address"
+                />
+              </Grid>
+              <Grid size={{ xs: 12 }}>
+                <TextField
+                  label="About"
+                  value={editUserData.about || ''}
+                  onChange={(e) => setEditUserData({ ...editUserData, about: e.target.value })}
+                  fullWidth
+                  multiline
+                  rows={3}
+                  helperText="Optional: Brief description about the user"
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <ModernDatePicker
+                  label="Date of Birth"
+                  value={editUserData.dateOfBirth || ''}
+                  onChange={(value) => setEditUserData({ ...editUserData, dateOfBirth: value })}
+                  error={!!editErrors.dateOfBirth}
+                  helperText={editErrors.dateOfBirth || "Optional: User's date of birth"}
+                  maxDate={dayjs()} // Cannot select future dates
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <FormControl fullWidth>
+                  <InputLabel>Role</InputLabel>
+                  <Select
+                    value={editUserData.role || 'USER'}
+                    label="Role"
+                    onChange={(e) => setEditUserData({ ...editUserData, role: e.target.value as 'ADMIN' | 'USER' })}
+                  >
+                    <MenuItem value="USER">User</MenuItem>
+                    <MenuItem value="ADMIN">Admin</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <FormControl fullWidth>
+                  <InputLabel>Status</InputLabel>
+                  <Select
+                    value={editUserData.status || 'ACTIVE'}
+                    label="Status"
+                    onChange={(e) => setEditUserData({ ...editUserData, status: e.target.value as 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' })}
+                  >
+                    <MenuItem value="ACTIVE">Active</MenuItem>
+                    <MenuItem value="INACTIVE">Inactive</MenuItem>
+                    <MenuItem value="SUSPENDED">Suspended</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+            </Grid>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEditDialogOpen(false)}>Cancel</Button>
+          <Button onClick={handleUpdateUser} variant="contained">
+            Update User
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Confirm Delete</DialogTitle>
+        <DialogContent>
+          {deletingUser && (
+            <Box sx={{ mt: 1 }}>
+              <Typography variant="body1" sx={{ mb: 2 }}>
+                Are you sure you want to delete the user "{deletingUser.firstName} {deletingUser.lastName}"?
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                This action cannot be undone. The user will be permanently removed from the system.
+              </Typography>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+          <Button onClick={handleDeleteUser} color="error" variant="contained">
+            Delete
           </Button>
         </DialogActions>
       </Dialog>
