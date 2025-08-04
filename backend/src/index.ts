@@ -2,15 +2,29 @@ import express from 'express';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import path from 'path';
+import { createServer } from 'http';
 
 import authRoutes from './routes/auth';
 import userRoutes from './routes/users';
 import taskTypeRoutes from './routes/taskTypes';
 import { taskRoutes } from './routes/tasks';
 import uploadRoutes from './routes/upload';
+import notificationRoutes from './routes/notifications';
+import { WebSocketService } from './services/websocketService';
+import { globalNotificationHelper } from './services/globalNotificationHelper';
 
 const app = express();
+const server = createServer(app);
 const PORT = process.env.PORT || 3001;
+
+// Initialize WebSocket service
+export const wsService = new WebSocketService(server);
+
+// Set up the global notification helper with WebSocket service
+globalNotificationHelper.setWebSocketService(wsService);
+
+console.log('🚀 WebSocket service initialized');
+console.log('🔔 Global notification helper configured');
 
 // Rate limiting
 const limiter = rateLimit({
@@ -40,6 +54,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/task-types', taskTypeRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
@@ -51,6 +66,7 @@ app.use('*', (req, res) => {
   res.status(404).json({ message: 'Route not found' })
 })
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`)
+server.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`)
+  console.log(`📡 WebSocket server ready for connections`)
 }) 

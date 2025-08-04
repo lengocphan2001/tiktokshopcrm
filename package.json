@@ -25,6 +25,7 @@
     "@fontsource/plus-jakarta-sans": "5.2.6",
     "@fontsource/roboto-mono": "5.2.6",
     "@hookform/resolvers": "5.1.1",
+    "@mui/icons-material": "^7.2.0",
     "@mui/lab": "7.0.0-beta.13",
     "@mui/material": "7.1.1",
     "@mui/system": "7.1.1",
@@ -32,12 +33,14 @@
     "@mui/x-date-pickers": "8.5.1",
     "@phosphor-icons/react": "2.1.10",
     "apexcharts": "4.7.0",
+    "date-fns": "^4.1.0",
     "dayjs": "1.11.13",
     "next": "15.3.3",
     "react": "19.1.0",
     "react-apexcharts": "1.7.0",
     "react-dom": "19.1.0",
     "react-hook-form": "7.57.0",
+    "socket.io-client": "^4.8.1",
     "zod": "3.25.57"
   },
   "devDependencies": {

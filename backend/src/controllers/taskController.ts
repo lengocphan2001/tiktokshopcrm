@@ -1,6 +1,7 @@
 import { Request, Response } from 'express'
 import { TaskService } from '../services/taskService'
 import { CreateTaskInput, UpdateTaskInput, TaskPaginationInput } from '../utils/validation'
+import { globalNotificationHelper } from '../services/globalNotificationHelper'
 
 export class TaskController {
   private taskService: TaskService
@@ -15,6 +16,13 @@ export class TaskController {
       const createdById = req.user!.id
 
       const task = await this.taskService.createTask(data, createdById)
+
+      // Send notification to the assignee (this won't break if WebSocket is not available)
+      try {
+        await globalNotificationHelper.sendTaskCreatedNotification(task, req.user!)
+      } catch (notificationError) {
+        console.error('Notification error (non-blocking):', notificationError)
+      }
 
       res.status(201).json({
         success: true,
@@ -43,7 +51,19 @@ export class TaskController {
       const data = req.body as UpdateTaskInput
       const updatedById = req.user!.id
 
+      // Get the previous task data for comparison
+      const previousTask = await this.taskService.getTaskById(id)
+      
       const task = await this.taskService.updateTask(id, data, updatedById)
+
+      // Send notification to the assignee about the update (non-blocking)
+      if (previousTask) {
+        try {
+          await globalNotificationHelper.sendTaskUpdatedNotification(task, req.user!, previousTask)
+        } catch (notificationError) {
+          console.error('Notification error (non-blocking):', notificationError)
+        }
+      }
 
       res.json({
         success: true,
@@ -157,7 +177,20 @@ export class TaskController {
       const { status } = req.body
       const updatedById = req.user!.id
 
+      // Get the previous task data for status comparison
+      const previousTask = await this.taskService.getTaskById(id)
+      const previousStatus = previousTask?.status
+
       const task = await this.taskService.updateTaskStatus(id, status, updatedById)
+
+      // Send notification to the task creator about status change (non-blocking)
+      if (previousStatus && previousStatus !== status) {
+        try {
+          await globalNotificationHelper.sendTaskStatusChangedNotification(task, req.user!, previousStatus)
+        } catch (notificationError) {
+          console.error('Notification error (non-blocking):', notificationError)
+        }
+      }
 
       res.json({
         success: true,
@@ -180,6 +213,13 @@ export class TaskController {
       const updatedById = req.user!.id
 
       const task = await this.taskService.updateTaskResult(id, result, updatedById)
+
+      // Send notification to the task creator about result update (non-blocking)
+      try {
+        await globalNotificationHelper.sendTaskResultUpdatedNotification(task, req.user!)
+      } catch (notificationError) {
+        console.error('Notification error (non-blocking):', notificationError)
+      }
 
       res.json({
         success: true,

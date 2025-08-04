@@ -31,6 +31,19 @@ enum TaskStatus {
   CANCELLED
 }
 
+enum NotificationType {
+  TASK_CREATED
+  TASK_UPDATED
+  TASK_STATUS_CHANGED
+  TASK_RESULT_UPDATED
+  TASK_ASSIGNED
+}
+
+enum NotificationStatus {
+  UNREAD
+  READ
+}
+
 model User {
   id            String     @id @default(cuid())
   firstName     String     @map("first_name")
@@ -55,6 +68,9 @@ model User {
   // Task relationships
   assignedTasks Task[]     @relation("TaskAssignee")
   createdTasks  Task[]     @relation("TaskCreator")
+
+  // Notification relationships
+  notifications Notification[] @relation("UserNotifications")
 
   @@map("users")
 }
@@ -100,5 +116,28 @@ model Task {
   
   updatedBy   String?    @map("updated_by")
 
+  // Notification relationships
+  notifications Notification[]
+
   @@map("tasks")
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  type      NotificationType
+  title     String
+  message   String           @db.Text
+  status    NotificationStatus @default(UNREAD)
+  data      String?         @db.Text // JSON data for additional info
+  createdAt DateTime         @default(now()) @map("created_at")
+  updatedAt DateTime         @updatedAt @map("updated_at")
+
+  // Relationships
+  userId    String
+  user      User             @relation("UserNotifications", fields: [userId], references: [id])
+
+  taskId    String?
+  task      Task?            @relation(fields: [taskId], references: [id])
+
+  @@map("notifications")
 }

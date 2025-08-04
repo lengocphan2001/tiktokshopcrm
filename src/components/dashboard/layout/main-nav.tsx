@@ -18,6 +18,8 @@ import { useUser } from '@/hooks/use-user';
 
 import { MobileNav } from './mobile-nav';
 import { UserPopover } from './user-popover';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
+import { NotificationPermission } from '@/components/notifications/NotificationPermission';
 
 export function MainNav(): React.JSX.Element {
   const [openNav, setOpenNav] = React.useState<boolean>(false);
@@ -61,18 +63,18 @@ export function MainNav(): React.JSX.Element {
             </Tooltip>
           </Stack>
           <Stack sx={{ alignItems: 'center' }} direction="row" spacing={2}>
-            <Tooltip title="Contacts">
+            <Tooltip title="Users">
               <IconButton>
                 <UsersIcon />
               </IconButton>
             </Tooltip>
-            <Tooltip title="Notifications">
-              <Badge badgeContent={4} color="success" variant="dot">
-                <IconButton>
-                  <BellIcon />
-                </IconButton>
-              </Badge>
-            </Tooltip>
+            
+            {/* Notification Bell */}
+            <NotificationBell />
+            
+            {/* Notification Permission Button */}
+            <NotificationPermission />
+            
             <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
               <Box sx={{ textAlign: 'right', display: { xs: 'none', sm: 'block' } }}>
                 <Typography variant="subtitle2" sx={{ lineHeight: 1 }}>
