@@ -108,9 +108,9 @@ export const UserSelector: React.FC<UserSelectorProps> = ({
 
   React.useEffect(() => {
     const filtered = users.filter(user =>
-      user.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchQuery.toLowerCase())
+      user?.firstName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user?.lastName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user?.email?.toLowerCase().includes(searchQuery.toLowerCase())
     )
     setFilteredUsers(filtered)
   }, [searchQuery, users])
@@ -132,6 +132,8 @@ export const UserSelector: React.FC<UserSelectorProps> = ({
       onClose={handleClose}
       maxWidth="sm"
       fullWidth
+      disableEnforceFocus
+      disableAutoFocus
       PaperProps={{
         sx: {
           borderRadius: 3,
@@ -140,12 +142,14 @@ export const UserSelector: React.FC<UserSelectorProps> = ({
       }}
     >
       <DialogTitle sx={{ pb: 1 }}>
-        <Typography variant="h5" fontWeight="bold" gutterBottom>
-          Start New Conversation
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Select a user to start messaging
-        </Typography>
+        <Box>
+          <Typography variant="h5" fontWeight="bold" gutterBottom>
+            Start New Conversation
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Select a user to start messaging
+          </Typography>
+        </Box>
       </DialogTitle>
 
       <DialogContent sx={{ p: 3 }}>
@@ -239,7 +243,7 @@ export const UserSelector: React.FC<UserSelectorProps> = ({
                     <ListItemAvatar>
                       <Avatar
                         src={user.avatar}
-                        alt={`${user.firstName} ${user.lastName}`}
+                        alt={`${user.firstName || ''} ${user.lastName || ''}`}
                         sx={{
                           width: 48,
                           height: 48,
@@ -247,15 +251,15 @@ export const UserSelector: React.FC<UserSelectorProps> = ({
                           fontWeight: 'bold',
                         }}
                       >
-                        {user.firstName[0]}{user.lastName[0]}
+                        {user.firstName?.[0]}{user.lastName?.[0]}
                       </Avatar>
                     </ListItemAvatar>
                     <ListItemText
                       primary={
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Typography variant="subtitle1" fontWeight="bold">
-                            {user.firstName} {user.lastName}
-                          </Typography>
+                                                  <Typography variant="subtitle1" fontWeight="bold">
+                          {user.firstName || ''} {user.lastName || ''}
+                        </Typography>
                           <Chip
                             label={user.role}
                             size="small"
@@ -266,8 +270,8 @@ export const UserSelector: React.FC<UserSelectorProps> = ({
                         </Box>
                       }
                       secondary={
-                        <Typography variant="body2" color="text.secondary">
-                          {user.email}
+                        <Typography variant="body2" color="text.secondary" component="span">
+                          {user.email || ''}
                         </Typography>
                       }
                     />

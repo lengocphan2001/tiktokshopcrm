@@ -1,6 +1,7 @@
 import { Request, Response } from 'express'
 import { authenticateUser, generateToken, updateLastLogin } from '../utils/auth'
 import { LoginInput } from '../utils/validation'
+import { UserService } from '../services/userService'
 import bcrypt from 'bcryptjs'
 
 interface LoginResponse {
@@ -44,7 +45,6 @@ export class AuthController {
       await updateLastLogin(user.id)
 
       // Get fresh user data with all fields
-      const { UserService } = await import('../services/userService')
       const userService = new UserService()
       const freshUser = await userService.getUserById(user.id)
 
@@ -88,7 +88,6 @@ export class AuthController {
       const authenticatedUser = (req as any).user
 
       // Fetch fresh user data from database
-      const { UserService } = await import('../services/userService')
       const userService = new UserService()
       const freshUser = await userService.getUserById(authenticatedUser.id)
 

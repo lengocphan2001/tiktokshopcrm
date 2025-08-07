@@ -2,14 +2,14 @@ import express from 'express'
 import cors from 'cors'
 import { createServer } from 'http'
 import { Server as SocketIOServer } from 'socket.io'
-import { WebSocketServer } from 'ws'
+import { WebSocketServer, WebSocket } from 'ws'
 import jwt from 'jsonwebtoken'
 import { PrismaClient } from '@prisma/client'
 
 // Import routes
 import authRoutes from './routes/auth'
 import userRoutes from './routes/users'
-import taskRoutes from './routes/tasks'
+import { taskRoutes } from './routes/tasks'
 import taskTypeRoutes from './routes/taskTypes'
 import conversationRoutes from './routes/conversations'
 import messageRoutes from './routes/messages'
@@ -116,7 +116,10 @@ wss.on('connection', (ws, request) => {
 export const sendToUser = (userId: string, data: any) => {
   const ws = connectedUsers.get(userId)
   if (ws && ws.readyState === 1) { // WebSocket.OPEN
+    console.log(`Sending WebSocket message to user ${userId}:`, data.type)
     ws.send(JSON.stringify(data))
+  } else {
+    console.log(`User ${userId} not connected or WebSocket not ready (state: ${ws?.readyState})`)
   }
 }
 

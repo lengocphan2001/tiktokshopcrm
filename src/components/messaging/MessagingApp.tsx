@@ -107,15 +107,17 @@ export const MessagingApp: React.FC<MessagingAppProps> = ({
     setShowConversationList(true)
   }
 
-  const filteredConversations = conversations.filter(conversation => {
-    const otherParticipant = conversation.participants.find(p => p.user.id !== currentUserId)?.user
+  const filteredConversations = (conversations || []).filter(conversation => {
+    if (!conversation || !conversation.participants) return false
+    
+    const otherParticipant = conversation.participants.find(p => p?.user?.id !== currentUserId)?.user
     if (!otherParticipant) return false
     
     const searchLower = searchQuery.toLowerCase()
     return (
-      otherParticipant.firstName.toLowerCase().includes(searchLower) ||
-      otherParticipant.lastName.toLowerCase().includes(searchLower) ||
-      otherParticipant.email.toLowerCase().includes(searchLower)
+      otherParticipant.firstName?.toLowerCase().includes(searchLower) ||
+      otherParticipant.lastName?.toLowerCase().includes(searchLower) ||
+      otherParticipant.email?.toLowerCase().includes(searchLower)
     )
   })
 

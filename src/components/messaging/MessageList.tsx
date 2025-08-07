@@ -64,7 +64,19 @@ export const MessageList: React.FC<MessageListProps> = ({
   }
 
   const getLastMessage = (conversation: Conversation) => {
-    return conversation.messages?.[0]
+    if (!conversation.messages || conversation.messages.length === 0) {
+      return null
+    }
+    
+    // Find the message with the latest createdAt date
+    const lastMessage = conversation.messages.reduce((latest, current) => {
+      const latestDate = new Date(latest.createdAt)
+      const currentDate = new Date(current.createdAt)
+      return currentDate > latestDate ? current : latest
+    })
+    
+    console.log(`Conversation ${conversation.id} last message:`, lastMessage?.content, lastMessage?.createdAt)
+    return lastMessage
   }
 
   const getUnreadCount = (conversation: Conversation) => {
@@ -229,9 +241,10 @@ export const MessageList: React.FC<MessageListProps> = ({
                   </Box>
                 }
                 secondary={
-                  <Box sx={{ mt: 0.5 }}>
+                  <>
                     <Typography
                       variant="body2"
+                      component="span"
                       sx={{
                         fontWeight: unreadCount > 0 ? 600 : 400,
                         opacity: 0.8,
@@ -254,15 +267,18 @@ export const MessageList: React.FC<MessageListProps> = ({
                     {lastMessage && (
                       <Typography
                         variant="caption"
+                        component="span"
                         sx={{
                           opacity: 0.6,
                           fontSize: '0.75rem',
+                          display: 'block',
+                          mt: 0.5,
                         }}
                       >
                         {formatDistanceToNow(new Date(lastMessage.createdAt), { addSuffix: true })}
                       </Typography>
                     )}
-                  </Box>
+                  </>
                 }
               />
             </ListItemButton>

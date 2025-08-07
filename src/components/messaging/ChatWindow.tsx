@@ -25,7 +25,7 @@ interface Message {
   id: string
   content: string
   type: 'TEXT' | 'SYSTEM' | 'NOTIFICATION'
-  status: 'SENT' | 'DELIVERED' | 'READ'
+  status: 'SENT' | 'DELIVERED' | 'READ' | 'SENDING'
   senderId: string
   createdAt: Date
   sender: {
@@ -99,7 +99,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   }
 
   const getOtherParticipant = () => {
-    return conversation?.participants.find(p => p.user.id !== currentUserId)?.user
+    return conversation?.participants?.find(p => p?.user?.id !== currentUserId)?.user
   }
 
   if (!conversation) {
@@ -306,6 +306,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                             overflowWrap: 'break-word',
                             boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                             position: 'relative',
+                            opacity: message.status === 'SENDING' ? 0.7 : 1,
                             '&::before': {
                               content: '""',
                               position: 'absolute',
@@ -352,7 +353,9 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                                 fontSize: '0.75rem',
                               }}
                             >
-                              {message.status === 'READ' ? '✓✓' : message.status === 'DELIVERED' ? '✓✓' : '✓'}
+                              {message.status === 'SENDING' ? '⏳' : 
+                               message.status === 'READ' ? '✓✓' : 
+                               message.status === 'DELIVERED' ? '✓✓' : '✓'}
                             </Typography>
                           )}
                         </Box>
@@ -410,26 +413,28 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
             }}
           />
           <Tooltip title="Send message">
-            <IconButton
-              color="primary"
-              onClick={handleSendMessage}
-              disabled={!newMessage.trim() || loading}
-              sx={{ 
-                alignSelf: 'flex-end',
-                backgroundColor: 'primary.main',
-                color: 'primary.contrastText',
-                flexShrink: 0,
-                '&:hover': {
-                  backgroundColor: 'primary.dark',
-                },
-                '&:disabled': {
-                  backgroundColor: 'grey.300',
-                  color: 'grey.500',
-                },
-              }}
-            >
-              {loading ? <CircularProgress size={20} /> : <SendIcon />}
-            </IconButton>
+            <span>
+              <IconButton
+                color="primary"
+                onClick={handleSendMessage}
+                disabled={!newMessage.trim() || loading}
+                sx={{ 
+                  alignSelf: 'flex-end',
+                  backgroundColor: 'primary.main',
+                  color: 'primary.contrastText',
+                  flexShrink: 0,
+                  '&:hover': {
+                    backgroundColor: 'primary.dark',
+                  },
+                  '&:disabled': {
+                    backgroundColor: 'grey.300',
+                    color: 'grey.500',
+                  },
+                }}
+              >
+                {loading ? <CircularProgress size={20} /> : <SendIcon />}
+              </IconButton>
+            </span>
           </Tooltip>
         </Box>
       </Paper>

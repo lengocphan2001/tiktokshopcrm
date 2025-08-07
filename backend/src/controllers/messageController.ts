@@ -48,6 +48,7 @@ export class MessageController {
           .map(p => p.user.id)
         
         // Send message to all participants
+        console.log(`Sending WebSocket notification to participants: ${participantIds.join(', ')}`)
         sendToUsers(participantIds, {
           type: 'newMessage',
           message

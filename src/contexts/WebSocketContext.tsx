@@ -18,7 +18,7 @@ interface Message {
   id: string
   content: string
   type: 'TEXT' | 'SYSTEM' | 'NOTIFICATION'
-  status: 'SENT' | 'DELIVERED' | 'READ'
+  status: 'SENT' | 'DELIVERED' | 'READ' | 'SENDING'
   senderId: string
   conversationId: string
   createdAt: Date
@@ -252,10 +252,26 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
 
   // Initialize WebSocket connection
   const initializeWebSocket = React.useCallback(() => {
-    if (!userId) return
+    if (!userId) {
+      console.log('No userId available for WebSocket connection')
+      return
+    }
 
     const token = getAuthToken()
-    if (!token) return
+    if (!token) {
+      console.log('No auth token available for WebSocket connection')
+      return
+    }
+
+    console.log('Initializing WebSocket connection for user:', userId)
+    console.log('Token available:', !!token)
+
+    // Connect immediately for instant messaging
+    const currentToken = getAuthToken()
+    if (!currentToken) {
+      console.log('Token not available')
+      return
+    }
 
     // Close existing connection
     if (wsRef.current) {
@@ -266,8 +282,15 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001'
     const wsUrl = backendUrl.replace('http', 'ws').replace('https', 'wss')
     
+    console.log('Backend URL:', backendUrl)
+    console.log('WebSocket URL:', wsUrl)
+    
+    let ws: WebSocket
+    
     try {
-      const ws = new WebSocket(`${wsUrl}/ws?token=${token}`)
+      const fullWsUrl = `${wsUrl}/ws?token=${currentToken}`
+      console.log('Full WebSocket URL:', fullWsUrl)
+      ws = new WebSocket(fullWsUrl)
       wsRef.current = ws
       
       console.log('Attempting WebSocket connection to:', `${wsUrl}/ws`)
@@ -277,92 +300,103 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
       return
     }
 
-    ws.onopen = () => {
-      setIsConnected(true)
-      console.log('WebSocket connected')
-      
-      // Authenticate the user
-      ws.send(JSON.stringify({
-        type: 'authenticate',
-        userId
-      }))
-      
-      // Fetch existing notifications
-      fetchNotifications()
-    }
-
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data)
+      ws.onopen = () => {
+        setIsConnected(true)
+        console.log('WebSocket connected')
         
-        switch (data.type) {
-          case 'newMessage':
-            messageCallbacksRef.current.forEach(callback => callback(data.message))
-            break
-            
-          case 'conversationUpdated':
-            conversationCallbacksRef.current.forEach(callback => callback(data.conversation))
-            break
-            
-          case 'newNotification':
-            setNotifications(prev => [data.notification, ...prev])
-            setUnreadCount(prev => prev + 1)
-            
-            // Show browser notification if permission is granted
-            if (Notification.permission === 'granted') {
-              new Notification(data.notification.title, {
-                body: data.notification.message,
-                icon: '/favicon.ico',
-                tag: data.notification.id,
-              })
-            }
-            break
-            
-          case 'broadcastNotification':
-            setNotifications(prev => [data.notification, ...prev])
-            setUnreadCount(prev => prev + 1)
-            break
-            
-          case 'notificationMarkedRead':
-            setNotifications(prev => 
-              prev.map(notif => 
-                notif.id === data.notificationId 
-                  ? { ...notif, status: 'READ' as const }
-                  : notif
+        // Authenticate the user
+        ws.send(JSON.stringify({
+          type: 'authenticate',
+          userId
+        }))
+        
+        // Fetch existing notifications
+        fetchNotifications()
+      }
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data)
+          console.log('WebSocket message received:', data)
+          
+          switch (data.type) {
+            case 'newMessage':
+              console.log('New message received via WebSocket:', data.message)
+              messageCallbacksRef.current.forEach(callback => callback(data.message))
+              break
+              
+            case 'conversationUpdated':
+              conversationCallbacksRef.current.forEach(callback => callback(data.conversation))
+              break
+              
+            case 'newNotification':
+              setNotifications(prev => [data.notification, ...prev])
+              setUnreadCount(prev => prev + 1)
+              
+              // Show browser notification if permission is granted
+              if (Notification.permission === 'granted') {
+                new Notification(data.notification.title, {
+                  body: data.notification.message,
+                  icon: '/favicon.ico',
+                  tag: data.notification.id,
+                })
+              }
+              break
+              
+            case 'broadcastNotification':
+              setNotifications(prev => [data.notification, ...prev])
+              setUnreadCount(prev => prev + 1)
+              break
+              
+            case 'notificationMarkedRead':
+              setNotifications(prev => 
+                prev.map(notif => 
+                  notif.id === data.notificationId 
+                    ? { ...notif, status: 'READ' as const }
+                    : notif
+                )
               )
-            )
-            break
+              break
+          }
+        } catch (error) {
+          console.error('Error parsing WebSocket message:', error)
         }
-      } catch (error) {
-        console.error('Error parsing WebSocket message:', error)
       }
-    }
 
-    ws.onclose = () => {
-      setIsConnected(false)
-      console.log('WebSocket disconnected')
-      
-      // Attempt to reconnect after 3 seconds
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current)
+      ws.onclose = () => {
+        setIsConnected(false)
+        console.log('WebSocket disconnected')
+        
+        // Attempt to reconnect after 3 seconds
+        if (reconnectTimeoutRef.current) {
+          clearTimeout(reconnectTimeoutRef.current)
+        }
+        reconnectTimeoutRef.current = setTimeout(() => {
+          initializeWebSocket()
+        }, 3000)
       }
-      reconnectTimeoutRef.current = setTimeout(() => {
-        initializeWebSocket()
-      }, 3000)
-    }
 
-    ws.onerror = (error) => {
-      console.error('WebSocket connection error:', error)
-      console.log('WebSocket URL attempted:', `${wsUrl}/ws?token=${token.substring(0, 20)}...`)
-      setIsConnected(false)
-    }
+      ws.onerror = (error) => {
+        console.log('WebSocket URL attempted:', `${wsUrl}/ws?token=${currentToken.substring(0, 20)}...`)
+        console.log('Full WebSocket URL:', `${wsUrl}/ws?token=${currentToken}`)
+        console.log('Token length:', currentToken.length)
+        setIsConnected(false)
+      }
   }, [userId, fetchNotifications])
 
   React.useEffect(() => {
     if (!userId) {
+      console.log('No userId available, skipping WebSocket initialization')
       return
     }
 
+    const token = getAuthToken()
+    if (!token) {
+      console.log('No auth token available, skipping WebSocket initialization')
+      return
+    }
+
+    console.log('User authenticated, initializing WebSocket connection')
     initializeWebSocket()
 
     // Cleanup on unmount
