@@ -9,5 +9,6 @@ export const paths = {
     tasks: '/dashboard/tasks',
     myTasks: '/dashboard/my-tasks',
     messages: '/dashboard/messages',
+    timekeeping: '/dashboard/timekeeping',
   },
 } as const;

@@ -1,5 +1,10 @@
 import { z } from 'zod'
 
+export const loginSchema = z.object({
+  email: z.string().email('Invalid email address'),
+  password: z.string().min(1, 'Password is required'),
+})
+
 export const createUserSchema = z.object({
   firstName: z.string().min(1, 'First name is required').max(50, 'First name too long'),
   lastName: z.string().min(1, 'Last name is required').max(50, 'Last name too long'),
@@ -24,23 +29,38 @@ export const updateUserSchema = z.object({
   bankAccount: z.string().optional(),
   about: z.string().optional(),
   address: z.string().optional(),
-  dateOfBirth: z.string().optional().or(z.null()),
+  dateOfBirth: z.string().optional(),
   role: z.enum(['ADMIN', 'USER']).optional(),
   status: z.enum(['ACTIVE', 'INACTIVE', 'SUSPENDED']).optional(),
-  isActive: z.boolean().optional(),
-})
-
-export const loginSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(1, 'Password is required'),
 })
 
 export const paginationSchema = z.object({
-  page: z.coerce.number().min(1).default(1),
-  limit: z.coerce.number().min(1).max(100).default(10),
+  page: z.coerce.number().min(1, 'Page must be at least 1').default(1),
+  limit: z.coerce.number().min(1, 'Limit must be at least 1').max(100, 'Limit cannot exceed 100').default(10),
   search: z.string().optional(),
-  role: z.string().optional(),
-  status: z.string().optional(),
+  role: z.enum(['ADMIN', 'USER']).optional(),
+  status: z.enum(['ACTIVE', 'INACTIVE', 'SUSPENDED']).optional(),
+})
+
+// Time Record validation schemas
+export const createTimeRecordSchema = z.object({
+  status: z.enum(['CLOCKED_IN', 'CLOCKED_OUT', 'BREAK_START', 'BREAK_END']),
+  notes: z.string().optional(),
+  location: z.string().optional(),
+})
+
+export const updateTimeRecordSchema = z.object({
+  status: z.enum(['CLOCKED_IN', 'CLOCKED_OUT', 'BREAK_START', 'BREAK_END']).optional(),
+  notes: z.string().optional(),
+  location: z.string().optional(),
+})
+
+export const timeRecordPaginationSchema = z.object({
+  page: z.coerce.number().min(1, 'Page must be at least 1').default(1),
+  limit: z.coerce.number().min(1, 'Limit must be at least 1').max(100, 'Limit cannot exceed 100').default(10),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+  status: z.enum(['CLOCKED_IN', 'CLOCKED_OUT', 'BREAK_START', 'BREAK_END']).optional(),
 })
 
 export const createTaskTypeSchema = z.object({
@@ -121,4 +141,8 @@ export type TaskTypePaginationInput = z.infer<typeof taskTypePaginationSchema>
 
 export type CreateTaskInput = z.infer<typeof createTaskSchema>
 export type UpdateTaskInput = z.infer<typeof updateTaskSchema>
-export type TaskPaginationInput = z.infer<typeof taskPaginationSchema> 
+export type TaskPaginationInput = z.infer<typeof taskPaginationSchema>
+
+export type CreateTimeRecordInput = z.infer<typeof createTimeRecordSchema>
+export type UpdateTimeRecordInput = z.infer<typeof updateTimeRecordSchema>
+export type TimeRecordPaginationInput = z.infer<typeof timeRecordPaginationSchema> 

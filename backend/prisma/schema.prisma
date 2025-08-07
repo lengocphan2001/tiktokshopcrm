@@ -56,6 +56,13 @@ enum MessageStatus {
   READ
 }
 
+enum TimeRecordStatus {
+  CLOCKED_IN
+  CLOCKED_OUT
+  BREAK_START
+  BREAK_END
+}
+
 model User {
   id            String     @id @default(cuid())
   firstName     String     @map("first_name")
@@ -88,6 +95,9 @@ model User {
   sentMessages     Message[] @relation("MessageSender")
   receivedMessages Message[] @relation("MessageRecipient")
   conversations    ConversationParticipant[]
+
+  // Time tracking relationships
+  timeRecords TimeRecord[] @relation("UserTimeRecords")
 
   @@map("users")
 }
@@ -207,4 +217,27 @@ model Message {
   conversation Conversation? @relation(fields: [conversationId], references: [id])
 
   @@map("messages")
+}
+
+model TimeRecord {
+  id          String           @id @default(cuid())
+  userId      String           @map("user_id")
+  status      TimeRecordStatus
+  clockInAt   DateTime?        @map("clock_in_at")
+  clockOutAt  DateTime?        @map("clock_out_at")
+  breakStartAt DateTime?       @map("break_start_at")
+  breakEndAt   DateTime?       @map("break_end_at")
+  totalHours  Decimal?         @map("total_hours") @db.Decimal(5, 2) // Hours worked (e.g., 8.50)
+  breakHours  Decimal?         @map("break_hours") @db.Decimal(5, 2) // Break hours (e.g., 1.00)
+  workHours   Decimal?         @map("work_hours") @db.Decimal(5, 2)  // Actual work hours (total - break)
+  notes       String?          @db.Text
+  location    String?          // Optional location tracking
+  isActive    Boolean          @default(true) @map("is_active")
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+
+  // Relationships
+  user User @relation("UserTimeRecords", fields: [userId], references: [id])
+
+  @@map("time_records")
 }

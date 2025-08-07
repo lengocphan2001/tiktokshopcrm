@@ -8,11 +8,13 @@ import { UserIcon } from '@phosphor-icons/react/dist/ssr/User';
 import { UsersIcon } from '@phosphor-icons/react/dist/ssr/Users';
 import { CheckSquareIcon } from '@phosphor-icons/react/dist/ssr/CheckSquare';
 import { XSquare } from '@phosphor-icons/react/dist/ssr/XSquare';
+import { ClockIcon } from '@phosphor-icons/react/dist/ssr/Clock';
 
 export const navIcons = {
   'chart-pie': ChartPieIcon,
   'chat-circle': ChatCircleIcon,
   'check-square': CheckSquareIcon,
+  'clock': ClockIcon,
   'gear-six': GearSixIcon,
   'list': ListIcon,
   'plugs-connected': PlugsConnectedIcon,

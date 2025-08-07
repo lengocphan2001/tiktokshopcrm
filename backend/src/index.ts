@@ -15,6 +15,7 @@ import conversationRoutes from './routes/conversations'
 import messageRoutes from './routes/messages'
 import notificationRoutes from './routes/notifications'
 import uploadRoutes from './routes/upload'
+import { timeRecordRoutes } from './routes/timeRecords'
 
 // Import services
 import { WebSocketService } from './services/websocketService'
@@ -161,6 +162,7 @@ app.use('/api/conversations', authenticateToken, conversationRoutes)
 app.use('/api/messages', authenticateToken, messageRoutes)
 app.use('/api/notifications', authenticateToken, notificationRoutes)
 app.use('/api/upload', authenticateToken, uploadRoutes)
+app.use('/api/time-records', timeRecordRoutes)
 
 // Health check endpoint
 app.get('/health', (req, res) => {
