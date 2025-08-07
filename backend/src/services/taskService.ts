@@ -57,8 +57,12 @@ export class TaskService {
   }
 
   async getTasks(params: TaskPaginationInput): Promise<PaginatedTasksResponse> {
-    const { page, limit, search, status, taskTypeId, assigneeId, createdById } = params
-    const skip = (page - 1) * limit
+    const { page = 1, limit = 10, search, status, taskTypeId, assigneeId, createdById } = params
+    
+    // Ensure page and limit are valid numbers
+    const validPage = Math.max(1, Number(page) || 1)
+    const validLimit = Math.max(1, Math.min(100, Number(limit) || 10))
+    const skip = (validPage - 1) * validLimit
 
     const where: any = {
       isActive: true,
@@ -91,7 +95,7 @@ export class TaskService {
       prisma.task.findMany({
         where,
         skip,
-        take: Number(limit),
+        take: validLimit,
         orderBy: { createdAt: 'desc' },
         include: {
           taskType: true,
@@ -102,20 +106,24 @@ export class TaskService {
       prisma.task.count({ where }),
     ])
 
-    const totalPages = Math.ceil(total / limit)
+    const totalPages = Math.ceil(total / validLimit)
 
     return {
       tasks: tasks.map(task => this.formatTaskResponse(task)),
       total,
-      page,
-      limit,
+      page: validPage,
+      limit: validLimit,
       totalPages,
     }
   }
 
   async getTasksByAssignee(assigneeId: string, params: TaskPaginationInput): Promise<PaginatedTasksResponse> {
-    const { page, limit, search, status } = params
-    const skip = (page - 1) * limit
+    const { page = 1, limit = 10, search, status } = params
+    
+    // Ensure page and limit are valid numbers
+    const validPage = Math.max(1, Number(page) || 1)
+    const validLimit = Math.max(1, Math.min(100, Number(limit) || 10))
+    const skip = (validPage - 1) * validLimit
 
     const where: any = {
       assigneeId,
@@ -137,7 +145,7 @@ export class TaskService {
       prisma.task.findMany({
         where,
         skip,
-        take: Number(limit),
+        take: validLimit,
         orderBy: { createdAt: 'desc' },
         include: {
           taskType: true,
@@ -148,13 +156,13 @@ export class TaskService {
       prisma.task.count({ where }),
     ])
 
-    const totalPages = Math.ceil(total / limit)
+    const totalPages = Math.ceil(total / validLimit)
 
     return {
       tasks: tasks.map(task => this.formatTaskResponse(task)),
       total,
-      page,
-      limit,
+      page: validPage,
+      limit: validLimit,
       totalPages,
     }
   }

@@ -137,18 +137,19 @@ export class TaskController {
 
   async getTasks(req: Request, res: Response): Promise<void> {
     try {
-      const { page = 1, limit = 10, status, assigneeId, createdById } = req.query
-      const filters: any = {}
+      const { page = 1, limit = 10, search, status, taskTypeId, assigneeId, createdById } = req.query
+      
+      const params: TaskPaginationInput = {
+        page: Number(page) || 1,
+        limit: Number(limit) || 10,
+        search: search as string,
+        status: status as string,
+        taskTypeId: taskTypeId as string,
+        assigneeId: assigneeId as string,
+        createdById: createdById as string,
+      }
 
-      if (status) filters.status = status
-      if (assigneeId) filters.assigneeId = assigneeId
-      if (createdById) filters.createdById = createdById
-
-      const tasks = await this.taskService.getTasks(
-        Number(page),
-        Number(limit),
-        filters
-      )
+      const tasks = await this.taskService.getTasks(params)
 
       res.json({
         success: true,
@@ -166,7 +167,17 @@ export class TaskController {
   async getTasksByAssignee(req: Request, res: Response): Promise<void> {
     try {
       const { assigneeId } = req.params
-      const params = req.body as TaskPaginationInput
+      const bodyParams = req.body as any
+      
+      const params: TaskPaginationInput = {
+        page: Number(bodyParams.page) || 1,
+        limit: Number(bodyParams.limit) || 10,
+        search: bodyParams.search,
+        status: bodyParams.status,
+        taskTypeId: bodyParams.taskTypeId,
+        assigneeId: bodyParams.assigneeId,
+        createdById: bodyParams.createdById,
+      }
 
       const tasks = await this.taskService.getTasksByAssignee(assigneeId, params)
 
