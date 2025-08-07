@@ -1,84 +1,182 @@
-import express from 'express';
-import cors from 'cors';
-import rateLimit from 'express-rate-limit';
-import path from 'path';
-import { createServer } from 'http';
+import express from 'express'
+import cors from 'cors'
+import { createServer } from 'http'
+import { Server as SocketIOServer } from 'socket.io'
+import { WebSocketServer } from 'ws'
+import jwt from 'jsonwebtoken'
+import { PrismaClient } from '@prisma/client'
 
-import authRoutes from './routes/auth';
-import userRoutes from './routes/users';
-import taskTypeRoutes from './routes/taskTypes';
-import { taskRoutes } from './routes/tasks';
-import uploadRoutes from './routes/upload';
-import notificationRoutes from './routes/notifications';
-import conversationRoutes from './routes/conversations';
-import messageRoutes from './routes/messages';
-import { WebSocketService } from './services/websocketService';
-import { globalNotificationHelper } from './services/globalNotificationHelper';
+// Import routes
+import authRoutes from './routes/auth'
+import userRoutes from './routes/users'
+import taskRoutes from './routes/tasks'
+import taskTypeRoutes from './routes/taskTypes'
+import conversationRoutes from './routes/conversations'
+import messageRoutes from './routes/messages'
+import notificationRoutes from './routes/notifications'
+import uploadRoutes from './routes/upload'
 
-const app = express();
-const server = createServer(app);
-const PORT = process.env.PORT || 3001;
+// Import services
+import { WebSocketService } from './services/websocketService'
+import { globalNotificationHelper } from './services/globalNotificationHelper'
 
-// Initialize WebSocket service
-export const wsService = new WebSocketService(server);
+// Import middleware
+import { authenticateToken } from './middleware/auth'
 
-// Set up the global notification helper with WebSocket service
-globalNotificationHelper.setWebSocketService(wsService);
+const app = express()
+const server = createServer(app)
+const prisma = new PrismaClient()
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 1000, // limit each IP to 1000 requests per windowMs (more lenient)
-  message: 'Too many requests from this IP, please try again later.'
-});
+// Socket.IO server (for notifications)
+const io = new SocketIOServer(server, {
+  cors: {
+    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    methods: ['GET', 'POST'],
+    credentials: true,
+  },
+})
 
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs (more lenient)
-  message: 'Too many authentication attempts, please try again later.'
-});
+// Native WebSocket server (for messaging)
+const wss = new WebSocketServer({ 
+  server,
+  path: '/ws'
+})
 
-// CORS configuration
-const corsOptions = {
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://yourdomain.com'] // Replace with your production domain
-    : ['http://localhost:3000', 'http://127.0.0.1:3000'],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  optionsSuccessStatus: 200
-};
+// Store connected users
+const connectedUsers = new Map<string, WebSocket>()
+
+// WebSocket connection handler
+wss.on('connection', (ws, request) => {
+  console.log('WebSocket client connected')
+  
+  // Extract token from URL query parameters
+  const url = new URL(request.url!, `http://${request.headers.host}`)
+  const token = url.searchParams.get('token')
+  
+  if (!token) {
+    ws.close(1008, 'Authentication required')
+    return
+  }
+  
+  try {
+    // Verify JWT token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any
+    const userId = decoded.userId
+    
+    // Store user connection
+    connectedUsers.set(userId, ws)
+    console.log(`User ${userId} connected via WebSocket`)
+    
+    // Send authentication success
+    ws.send(JSON.stringify({
+      type: 'authenticated',
+      userId
+    }))
+    
+    ws.on('message', (data) => {
+      try {
+        const message = JSON.parse(data.toString())
+        
+        switch (message.type) {
+          case 'authenticate':
+            // Already authenticated, just confirm
+            ws.send(JSON.stringify({
+              type: 'authenticated',
+              userId: message.userId
+            }))
+            break
+            
+          case 'joinConversation':
+            // Handle joining conversation room
+            console.log(`User ${userId} joined conversation: ${message.conversationId}`)
+            break
+            
+          case 'leaveConversation':
+            // Handle leaving conversation room
+            console.log(`User ${userId} left conversation: ${message.conversationId}`)
+            break
+        }
+      } catch (error) {
+        console.error('Error parsing WebSocket message:', error)
+      }
+    })
+    
+    ws.on('close', () => {
+      connectedUsers.delete(userId)
+      console.log(`User ${userId} disconnected`)
+    })
+    
+  } catch (error) {
+    console.error('WebSocket authentication error:', error)
+    ws.close(1008, 'Invalid token')
+  }
+})
+
+// Function to send message to specific user
+export const sendToUser = (userId: string, data: any) => {
+  const ws = connectedUsers.get(userId)
+  if (ws && ws.readyState === 1) { // WebSocket.OPEN
+    ws.send(JSON.stringify(data))
+  }
+}
+
+// Function to send message to multiple users
+export const sendToUsers = (userIds: string[], data: any) => {
+  userIds.forEach(userId => sendToUser(userId, data))
+}
+
+// Function to broadcast to all connected users
+export const broadcastToAll = (data: any) => {
+  wss.clients.forEach((client) => {
+    if (client.readyState === 1) { // WebSocket.OPEN
+      client.send(JSON.stringify(data))
+    }
+  })
+}
+
+// Initialize Socket.IO service for notifications
+export const wsService = new WebSocketService(server)
+globalNotificationHelper.setWebSocketService(wsService)
 
 // Middleware
-app.use(cors(corsOptions));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(limiter);
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  credentials: true,
+}))
+app.use(express.json())
+app.use(express.urlencoded({ extended: true }))
 
-// Serve static files (avatars)
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+// Static file serving
+app.use('/uploads', express.static('uploads'))
 
 // Routes
-app.use('/api/auth', authLimiter, authRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/task-types', taskTypeRoutes);
-app.use('/api/tasks', taskRoutes);
-app.use('/api/upload', uploadRoutes);
-app.use('/api/notifications', notificationRoutes);
-app.use('/api/conversations', conversationRoutes);
-app.use('/api/messages', messageRoutes);
+app.use('/api/auth', authRoutes)
+app.use('/api/users', authenticateToken, userRoutes)
+app.use('/api/tasks', authenticateToken, taskRoutes)
+app.use('/api/task-types', authenticateToken, taskTypeRoutes)
+app.use('/api/conversations', authenticateToken, conversationRoutes)
+app.use('/api/messages', authenticateToken, messageRoutes)
+app.use('/api/notifications', authenticateToken, notificationRoutes)
+app.use('/api/upload', authenticateToken, uploadRoutes)
 
-// Health check
+// Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() })
 })
 
-// 404 handler
-app.use('*', (req, res) => {
-  res.status(404).json({ message: 'Route not found' })
-})
+const PORT = process.env.PORT || 3001
 
 server.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`)
-  console.log(`📡 WebSocket server ready for connections`)
+  console.log(`Server running on port ${PORT}`)
+  console.log(`WebSocket server running on ws://localhost:${PORT}/ws`)
+})
+
+// Graceful shutdown
+process.on('SIGTERM', async () => {
+  console.log('SIGTERM received, shutting down gracefully')
+  await prisma.$disconnect()
+  server.close(() => {
+    console.log('Server closed')
+    process.exit(0)
+  })
 }) 

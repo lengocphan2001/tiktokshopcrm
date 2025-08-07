@@ -3,13 +3,12 @@
 import * as React from 'react'
 import {
   Box,
-  Grid,
   Paper,
   Typography,
   CircularProgress,
   Alert,
-  Button,
-  Fab,
+  IconButton,
+  TextField,
   Fade,
 } from '@mui/material'
 import { Add as AddIcon } from '@mui/icons-material'
@@ -90,6 +89,8 @@ export const MessagingApp: React.FC<MessagingAppProps> = ({
   onStartConversation,
 }) => {
   const [userSelectorOpen, setUserSelectorOpen] = React.useState(false)
+  const [showConversationList, setShowConversationList] = React.useState(true)
+  const [searchQuery, setSearchQuery] = React.useState('')
 
   const handleUserSelect = (user: User) => {
     if (onStartConversation) {
@@ -97,48 +98,63 @@ export const MessagingApp: React.FC<MessagingAppProps> = ({
     }
   }
 
+  const handleConversationSelect = (conversation: Conversation) => {
+    onConversationSelect(conversation)
+    setShowConversationList(false)
+  }
+
+  const handleBackToConversations = () => {
+    setShowConversationList(true)
+  }
+
+  const filteredConversations = conversations.filter(conversation => {
+    const otherParticipant = conversation.participants.find(p => p.user.id !== currentUserId)?.user
+    if (!otherParticipant) return false
+    
+    const searchLower = searchQuery.toLowerCase()
+    return (
+      otherParticipant.firstName.toLowerCase().includes(searchLower) ||
+      otherParticipant.lastName.toLowerCase().includes(searchLower) ||
+      otherParticipant.email.toLowerCase().includes(searchLower)
+    )
+  })
+
   return (
-    <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
       {/* Header */}
       <Paper 
         sx={{ 
-          p: 3, 
+          p: 2, 
           borderBottom: 1, 
           borderColor: 'divider',
           backgroundColor: 'background.paper',
           boxShadow: '0 2px 12px rgba(0,0,0,0.1)',
-          zIndex: 2
+          zIndex: 2,
+          flexShrink: 0
         }}
       >
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Box>
-            <Typography variant="h4" fontWeight="bold" gutterBottom>
+            <Typography variant="h5" fontWeight="bold" gutterBottom>
               Messages
             </Typography>
             <Typography variant="body2" color="text.secondary">
               {conversations.length} conversation{conversations.length !== 1 ? 's' : ''}
             </Typography>
           </Box>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
+          <IconButton
+            color="primary"
             onClick={() => setUserSelectorOpen(true)}
-            size="large"
             sx={{
-              borderRadius: 3,
-              px: 3,
-              py: 1.5,
-              textTransform: 'none',
-              fontWeight: 600,
-              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+              backgroundColor: 'primary.main',
+              color: 'primary.contrastText',
               '&:hover': {
-                boxShadow: '0 6px 16px rgba(0,0,0,0.2)',
-                transform: 'translateY(-1px)',
+                backgroundColor: 'primary.dark',
               },
             }}
           >
-            New Conversation
-          </Button>
+            <AddIcon />
+          </IconButton>
         </Box>
       </Paper>
 
@@ -157,9 +173,9 @@ export const MessagingApp: React.FC<MessagingAppProps> = ({
         </Fade>
       )}
 
-      <Grid container sx={{ flex: 1, overflow: 'hidden' }}>
+      <Box sx={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
         {/* Conversation List */}
-        <Grid item xs={12} md={4} lg={3}>
+        <Box sx={{ width: { xs: '100%', md: 320, lg: 400 }, minWidth: { md: 320, lg: 400 }, display: { xs: showConversationList ? 'flex' : 'none', md: 'flex' }, flexDirection: 'column', height: '100%' }}>
           <Paper
             sx={{
               height: '100%',
@@ -171,31 +187,44 @@ export const MessagingApp: React.FC<MessagingAppProps> = ({
               borderColor: 'divider',
             }}
           >
-            <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider', backgroundColor: 'background.paper' }}>
-              <Typography variant="h6" fontWeight="bold" color="text.primary">
+            <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider', backgroundColor: 'background.paper', flexShrink: 0 }}>
+              <Typography variant="h6" fontWeight="bold" color="text.primary" gutterBottom>
                 Conversations
               </Typography>
+              <TextField
+                fullWidth
+                size="small"
+                placeholder="Search conversations..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 2,
+                    backgroundColor: 'background.paper',
+                  },
+                }}
+              />
             </Box>
-            <Box sx={{ flex: 1, overflow: 'auto' }}>
+            <Box sx={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
               {loading ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
                   <CircularProgress />
                 </Box>
               ) : (
                 <MessageList
-                  conversations={conversations}
+                  conversations={filteredConversations}
                   currentUserId={currentUserId}
                   selectedConversationId={currentConversation?.id}
-                  onConversationSelect={onConversationSelect}
+                  onConversationSelect={handleConversationSelect}
                   loading={loading}
                 />
               )}
             </Box>
           </Paper>
-        </Grid>
+        </Box>
 
         {/* Chat Window */}
-        <Grid item xs={12} md={8} lg={9}>
+        <Box sx={{ flex: 1, display: { xs: !showConversationList ? 'flex' : 'none', md: 'flex' }, flexDirection: 'column' }}>
           <Paper
             sx={{
               height: '100%',
@@ -203,6 +232,7 @@ export const MessagingApp: React.FC<MessagingAppProps> = ({
               flexDirection: 'column',
               borderRadius: 0,
               backgroundColor: 'background.paper',
+              width: '100%',
             }}
           >
             <ChatWindow
@@ -211,27 +241,13 @@ export const MessagingApp: React.FC<MessagingAppProps> = ({
               messages={currentMessages}
               loading={loading}
               onSendMessage={onSendMessage}
+              onBackToConversations={handleBackToConversations}
             />
           </Paper>
-        </Grid>
-      </Grid>
-
-      {/* Floating Action Button for Mobile */}
-      <Box sx={{ display: { xs: 'block', md: 'none' }, position: 'fixed', bottom: 16, right: 16, zIndex: 1000 }}>
-        <Fab
-          color="primary"
-          onClick={() => setUserSelectorOpen(true)}
-          sx={{
-            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-            '&:hover': {
-              boxShadow: '0 6px 16px rgba(0,0,0,0.2)',
-              transform: 'scale(1.05)',
-            },
-          }}
-        >
-          <AddIcon />
-        </Fab>
+        </Box>
       </Box>
+
+
 
       {/* User Selector Dialog */}
       <UserSelector

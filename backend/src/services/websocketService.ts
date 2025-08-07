@@ -11,6 +11,22 @@ export interface NotificationPayload {
   data?: any
 }
 
+export interface MessagePayload {
+  id: string
+  content: string
+  type: 'TEXT' | 'SYSTEM' | 'NOTIFICATION'
+  status: 'SENT' | 'DELIVERED' | 'READ'
+  senderId: string
+  conversationId: string
+  createdAt: Date
+  sender: {
+    id: string
+    firstName: string
+    lastName: string
+    avatar?: string
+  }
+}
+
 export class WebSocketService {
   private io: SocketIOServer
   private userSockets: Map<string, string> = new Map() // userId -> socketId
@@ -38,6 +54,18 @@ export class WebSocketService {
         
         // Join user to their personal room
         socket.join(`user:${userId}`)
+      })
+
+      // Handle joining conversation room
+      socket.on('joinConversation', (conversationId: string) => {
+        socket.join(`conversation:${conversationId}`)
+        console.log(`User joined conversation: ${conversationId}`)
+      })
+
+      // Handle leaving conversation room
+      socket.on('leaveConversation', (conversationId: string) => {
+        socket.leave(`conversation:${conversationId}`)
+        console.log(`User left conversation: ${conversationId}`)
       })
 
       // Handle disconnection
@@ -97,5 +125,29 @@ export class WebSocketService {
   // Check if a user is connected
   isUserConnected(userId: string): boolean {
     return this.userSockets.has(userId)
+  }
+
+  // Send message to conversation participants
+  sendMessageToConversation(conversationId: string, message: MessagePayload) {
+    this.io.to(`conversation:${conversationId}`).emit('newMessage', message)
+    console.log(`Message sent to conversation ${conversationId}: ${message.content}`)
+  }
+
+  // Send message to specific user
+  sendMessageToUser(userId: string, message: MessagePayload) {
+    const socketId = this.userSockets.get(userId)
+    
+    if (socketId) {
+      this.io.to(socketId).emit('newMessage', message)
+      console.log(`Message sent to user ${userId}: ${message.content}`)
+    } else {
+      console.log(`User ${userId} is not connected`)
+    }
+  }
+
+  // Update conversation for all participants
+  updateConversationForParticipants(conversationId: string, conversation: any) {
+    this.io.to(`conversation:${conversationId}`).emit('conversationUpdated', conversation)
+    console.log(`Conversation ${conversationId} updated for all participants`)
   }
 } 

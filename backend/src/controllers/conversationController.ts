@@ -1,5 +1,6 @@
 import { Request, Response } from 'express'
 import { ConversationService } from '../services/conversationService'
+import { sendToUser } from '../index'
 
 export class ConversationController {
   private conversationService: ConversationService
@@ -76,6 +77,12 @@ export class ConversationController {
       }
 
       const conversation = await this.conversationService.createDirectConversation(senderId, recipientId)
+
+      // Send conversation update to the recipient
+      sendToUser(recipientId, {
+        type: 'conversationUpdated',
+        conversation
+      })
 
       res.status(201).json({
         success: true,

@@ -14,8 +14,10 @@ import {
   Fade,
   Slide,
   Tooltip,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material'
-import { Send as SendIcon, MoreVert as MoreVertIcon } from '@mui/icons-material'
+import { Send as SendIcon, MoreVert as MoreVertIcon, ArrowBack as ArrowBackIcon } from '@mui/icons-material'
 import { formatDistanceToNow } from 'date-fns'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -56,6 +58,7 @@ interface ChatWindowProps {
   loading?: boolean
   onSendMessage: (content: string) => void
   onLoadMoreMessages?: () => void
+  onBackToConversations?: () => void
 }
 
 export const ChatWindow: React.FC<ChatWindowProps> = ({
@@ -65,10 +68,13 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   loading = false,
   onSendMessage,
   onLoadMoreMessages,
+  onBackToConversations,
 }) => {
   const [newMessage, setNewMessage] = React.useState('')
   const messagesEndRef = React.useRef<HTMLDivElement>(null)
   const [isTyping, setIsTyping] = React.useState(false)
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -137,7 +143,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   const otherUser = getOtherParticipant()
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', overflow: 'hidden' }}>
       {/* Header */}
       <Paper 
         sx={{ 
@@ -146,10 +152,23 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           borderColor: 'divider',
           backgroundColor: 'background.paper',
           boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-          zIndex: 1
+          zIndex: 1,
+          width: '100%',
+          flexShrink: 0
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          {isMobile && onBackToConversations && (
+            <Tooltip title="Back to conversations">
+              <IconButton 
+                size="small" 
+                onClick={onBackToConversations}
+                sx={{ mr: 1 }}
+              >
+                <ArrowBackIcon />
+              </IconButton>
+            </Tooltip>
+          )}
           <Avatar
             src={otherUser?.avatar}
             alt={`${otherUser?.firstName} ${otherUser?.lastName}`}
@@ -162,11 +181,11 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           >
             {otherUser?.firstName?.[0]}{otherUser?.lastName?.[0]}
           </Avatar>
-          <Box sx={{ flex: 1 }}>
-            <Typography variant="h6" fontWeight="bold">
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Typography variant="h6" fontWeight="bold" noWrap>
               {otherUser ? `${otherUser.firstName} ${otherUser.lastName}` : 'Unknown User'}
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" color="text.secondary" noWrap>
               {otherUser?.email}
             </Typography>
           </Box>
@@ -188,6 +207,9 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           flexDirection: 'column',
           gap: 1,
           backgroundColor: 'grey.50',
+          width: '100%',
+          minHeight: 0,
+          maxHeight: '100%',
         }}
       >
         {loading ? (
@@ -245,6 +267,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                       display: 'flex',
                       justifyContent: isOwnMessage ? 'flex-end' : 'flex-start',
                       mb: 2,
+                      width: '100%',
                     }}
                   >
                     <Box
@@ -253,7 +276,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                         flexDirection: isOwnMessage ? 'row-reverse' : 'row',
                         alignItems: 'flex-end',
                         gap: 1,
-                        maxWidth: '70%',
+                        maxWidth: { xs: '85%', sm: '70%' },
+                        minWidth: 0,
                       }}
                     >
                       {!isOwnMessage && (
@@ -277,7 +301,9 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                             color: isOwnMessage ? 'primary.contrastText' : 'text.primary',
                             borderRadius: 3,
                             maxWidth: '100%',
+                            minWidth: 0,
                             wordBreak: 'break-word',
+                            overflowWrap: 'break-word',
                             boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                             position: 'relative',
                             '&::before': {
@@ -296,7 +322,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                             },
                           }}
                         >
-                          <Typography variant="body1" sx={{ lineHeight: 1.5 }}>
+                          <Typography variant="body1" sx={{ lineHeight: 1.5, wordBreak: 'break-word' }}>
                             {message.content}
                           </Typography>
                         </Paper>
@@ -349,9 +375,11 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           borderColor: 'divider',
           backgroundColor: 'background.paper',
           boxShadow: '0 -2px 8px rgba(0,0,0,0.1)',
+          width: '100%',
+          flexShrink: 0
         }}
       >
-        <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-end' }}>
+        <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-end', width: '100%' }}>
           <TextField
             fullWidth
             multiline
@@ -362,6 +390,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
             onKeyPress={handleKeyPress}
             disabled={loading}
             sx={{
+              flex: 1,
+              minWidth: 0,
               '& .MuiOutlinedInput-root': {
                 borderRadius: 3,
                 backgroundColor: 'background.paper',
@@ -388,6 +418,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                 alignSelf: 'flex-end',
                 backgroundColor: 'primary.main',
                 color: 'primary.contrastText',
+                flexShrink: 0,
                 '&:hover': {
                   backgroundColor: 'primary.dark',
                 },

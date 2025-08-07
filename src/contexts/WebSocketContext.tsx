@@ -1,7 +1,6 @@
 'use client';
 
 import * as React from 'react'
-import { io, Socket } from 'socket.io-client'
 import { useUser } from '@/hooks/use-user'
 
 interface Notification {
@@ -15,8 +14,48 @@ interface Notification {
   status?: 'UNREAD' | 'READ'
 }
 
+interface Message {
+  id: string
+  content: string
+  type: 'TEXT' | 'SYSTEM' | 'NOTIFICATION'
+  status: 'SENT' | 'DELIVERED' | 'READ'
+  senderId: string
+  conversationId: string
+  createdAt: Date
+  sender: {
+    id: string
+    firstName: string
+    lastName: string
+    avatar?: string
+  }
+}
+
+interface Conversation {
+  id: string
+  type: string
+  participants: Array<{
+    user: {
+      id: string
+      firstName: string
+      lastName: string
+      email: string
+      avatar?: string
+    }
+  }>
+  messages: Array<{
+    id: string
+    content: string
+    createdAt: Date
+    sender: {
+      id: string
+      firstName: string
+      lastName: string
+    }
+  }>
+  updatedAt: Date
+}
+
 interface WebSocketContextType {
-  socket: Socket | null
   isConnected: boolean
   notifications: Notification[]
   unreadCount: number
@@ -24,6 +63,11 @@ interface WebSocketContextType {
   markAllNotificationsAsRead: () => Promise<void>
   clearNotifications: () => void
   fetchNotifications: () => Promise<void>
+  // Messaging functions
+  joinConversation: (conversationId: string) => void
+  leaveConversation: (conversationId: string) => void
+  onNewMessage: (callback: (message: Message) => void) => (() => void) | undefined
+  onConversationUpdated: (callback: (conversation: Conversation) => void) => (() => void) | undefined
 }
 
 const WebSocketContext = React.createContext<WebSocketContextType | undefined>(undefined)
@@ -36,10 +80,17 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
   const { user } = useUser()
   const userId = user?.id
   
-  const [socket, setSocket] = React.useState<Socket | null>(null)
   const [isConnected, setIsConnected] = React.useState(false)
   const [notifications, setNotifications] = React.useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = React.useState(0)
+  
+  // Message and conversation callbacks using refs to avoid re-renders
+  const messageCallbacksRef = React.useRef<((message: Message) => void)[]>([])
+  const conversationCallbacksRef = React.useRef<((conversation: Conversation) => void)[]>([])
+  
+  // WebSocket connection
+  const wsRef = React.useRef<WebSocket | null>(null)
+  const reconnectTimeoutRef = React.useRef<NodeJS.Timeout | null>(null)
 
   // Function to get auth token from localStorage
   const getAuthToken = () => {
@@ -152,76 +203,180 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
     setUnreadCount(0)
   }
 
+  // Messaging functions
+  const joinConversation = (conversationId: string) => {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
+        type: 'joinConversation',
+        conversationId
+      }))
+    } else {
+      console.log('WebSocket not connected, skipping join conversation')
+    }
+  }
+
+  const leaveConversation = (conversationId: string) => {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
+        type: 'leaveConversation',
+        conversationId
+      }))
+    } else {
+      console.log('WebSocket not connected, skipping leave conversation')
+    }
+  }
+
+  const onNewMessage = React.useCallback((callback: (message: Message) => void) => {
+    messageCallbacksRef.current.push(callback)
+    
+    // Return cleanup function
+    return () => {
+      const index = messageCallbacksRef.current.indexOf(callback)
+      if (index > -1) {
+        messageCallbacksRef.current.splice(index, 1)
+      }
+    }
+  }, [])
+
+  const onConversationUpdated = React.useCallback((callback: (conversation: Conversation) => void) => {
+    conversationCallbacksRef.current.push(callback)
+    
+    // Return cleanup function
+    return () => {
+      const index = conversationCallbacksRef.current.indexOf(callback)
+      if (index > -1) {
+        conversationCallbacksRef.current.splice(index, 1)
+      }
+    }
+  }, [])
+
+  // Initialize WebSocket connection
+  const initializeWebSocket = React.useCallback(() => {
+    if (!userId) return
+
+    const token = getAuthToken()
+    if (!token) return
+
+    // Close existing connection
+    if (wsRef.current) {
+      wsRef.current.close()
+    }
+
+    // Create new WebSocket connection
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001'
+    const wsUrl = backendUrl.replace('http', 'ws').replace('https', 'wss')
+    
+    try {
+      const ws = new WebSocket(`${wsUrl}/ws?token=${token}`)
+      wsRef.current = ws
+      
+      console.log('Attempting WebSocket connection to:', `${wsUrl}/ws`)
+    } catch (error) {
+      console.error('Failed to create WebSocket connection:', error)
+      setIsConnected(false)
+      return
+    }
+
+    ws.onopen = () => {
+      setIsConnected(true)
+      console.log('WebSocket connected')
+      
+      // Authenticate the user
+      ws.send(JSON.stringify({
+        type: 'authenticate',
+        userId
+      }))
+      
+      // Fetch existing notifications
+      fetchNotifications()
+    }
+
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data)
+        
+        switch (data.type) {
+          case 'newMessage':
+            messageCallbacksRef.current.forEach(callback => callback(data.message))
+            break
+            
+          case 'conversationUpdated':
+            conversationCallbacksRef.current.forEach(callback => callback(data.conversation))
+            break
+            
+          case 'newNotification':
+            setNotifications(prev => [data.notification, ...prev])
+            setUnreadCount(prev => prev + 1)
+            
+            // Show browser notification if permission is granted
+            if (Notification.permission === 'granted') {
+              new Notification(data.notification.title, {
+                body: data.notification.message,
+                icon: '/favicon.ico',
+                tag: data.notification.id,
+              })
+            }
+            break
+            
+          case 'broadcastNotification':
+            setNotifications(prev => [data.notification, ...prev])
+            setUnreadCount(prev => prev + 1)
+            break
+            
+          case 'notificationMarkedRead':
+            setNotifications(prev => 
+              prev.map(notif => 
+                notif.id === data.notificationId 
+                  ? { ...notif, status: 'READ' as const }
+                  : notif
+              )
+            )
+            break
+        }
+      } catch (error) {
+        console.error('Error parsing WebSocket message:', error)
+      }
+    }
+
+    ws.onclose = () => {
+      setIsConnected(false)
+      console.log('WebSocket disconnected')
+      
+      // Attempt to reconnect after 3 seconds
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current)
+      }
+      reconnectTimeoutRef.current = setTimeout(() => {
+        initializeWebSocket()
+      }, 3000)
+    }
+
+    ws.onerror = (error) => {
+      console.error('WebSocket connection error:', error)
+      console.log('WebSocket URL attempted:', `${wsUrl}/ws?token=${token.substring(0, 20)}...`)
+      setIsConnected(false)
+    }
+  }, [userId, fetchNotifications])
+
   React.useEffect(() => {
     if (!userId) {
       return
     }
 
-    // Create socket connection
-    const newSocket = io(process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001', {
-      withCredentials: true,
-      transports: ['websocket', 'polling'],
-      timeout: 10000,
-    })
-
-    setSocket(newSocket)
-
-    // Socket event handlers
-    newSocket.on('connect', () => {
-      setIsConnected(true)
-      
-      // Authenticate the user
-      newSocket.emit('authenticate', userId)
-      
-      // Fetch existing notifications from database
-      fetchNotifications()
-    })
-
-    newSocket.on('connect_error', (error) => {
-      setIsConnected(false)
-    })
-
-    newSocket.on('disconnect', (reason) => {
-      setIsConnected(false)
-    })
-
-    newSocket.on('newNotification', (notification: Notification) => {
-      setNotifications(prev => [notification, ...prev])
-      setUnreadCount(prev => prev + 1)
-      
-      // Show browser notification if permission is granted
-      if (Notification.permission === 'granted') {
-        new Notification(notification.title, {
-          body: notification.message,
-          icon: '/favicon.ico',
-          tag: notification.id,
-        })
-      }
-    })
-
-    newSocket.on('broadcastNotification', (notification: Notification) => {
-      setNotifications(prev => [notification, ...prev])
-      setUnreadCount(prev => prev + 1)
-    })
-
-    newSocket.on('notificationMarkedRead', ({ notificationId }) => {
-      setNotifications(prev => 
-        prev.map(notif => 
-          notif.id === notificationId 
-            ? { ...notif, status: 'READ' as const }
-            : notif
-        )
-      )
-    })
+    initializeWebSocket()
 
     // Cleanup on unmount
     return () => {
-      newSocket.close()
+      if (wsRef.current) {
+        wsRef.current.close()
+      }
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current)
+      }
     }
-  }, [userId, fetchNotifications])
+  }, [userId, initializeWebSocket])
 
   const value: WebSocketContextType = {
-    socket,
     isConnected,
     notifications,
     unreadCount,
@@ -229,6 +384,11 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
     markAllNotificationsAsRead,
     clearNotifications,
     fetchNotifications,
+    // Messaging functions
+    joinConversation,
+    leaveConversation,
+    onNewMessage,
+    onConversationUpdated,
   }
 
   return (

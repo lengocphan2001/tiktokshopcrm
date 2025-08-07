@@ -1,8 +1,10 @@
 'use client';
 
 import * as React from 'react'
+import { Box } from '@mui/material'
 import { MessagingApp } from '@/components/messaging/MessagingApp'
 import { useUser } from '@/hooks/use-user'
+import { useWebSocket } from '@/contexts/WebSocketContext'
 
 interface Conversation {
   id: string
@@ -55,6 +57,7 @@ interface User {
 
 export default function MessagesPage() {
   const { user } = useUser()
+  const { joinConversation, leaveConversation, onNewMessage, onConversationUpdated } = useWebSocket()
   const [conversations, setConversations] = React.useState<Conversation[]>([])
   const [currentConversation, setCurrentConversation] = React.useState<Conversation | undefined>()
   const [currentMessages, setCurrentMessages] = React.useState<Message[]>([])
@@ -93,7 +96,11 @@ export default function MessagesPage() {
       }
 
       const data = await response.json()
-      setConversations(data.data || [])
+      // Sort conversations by updatedAt (newest first)
+      const sortedConversations = (data.data || []).sort((a: Conversation, b: Conversation) => 
+        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+      )
+      setConversations(sortedConversations)
     } catch (error: any) {
       setError(error.message || 'Failed to load conversations')
     } finally {
@@ -125,7 +132,8 @@ export default function MessagesPage() {
       }
 
       const data = await response.json()
-      setCurrentMessages(data.data || [])
+      // Reverse the messages to show oldest first (standard chat order)
+      setCurrentMessages((data.data || []).reverse())
     } catch (error: any) {
       setError(error.message || 'Failed to load messages')
     } finally {
@@ -166,21 +174,26 @@ export default function MessagesPage() {
 
       const data = await response.json()
       
-      // Add new message to current messages
+      // Add new message to current messages (newest at the end)
       setCurrentMessages(prev => [...prev, data.data])
       
-      // Update conversations list with new message
-      setConversations(prev => 
-        prev.map(conv => 
+      // Update conversations list with new message and move to top
+      setConversations(prev => {
+        const updatedConversations = prev.map(conv => 
           conv.id === currentConversation.id 
             ? {
                 ...conv,
-                messages: [data.data, ...conv.messages],
-                updatedAt: new Date().toISOString(),
+                messages: [...conv.messages, data.data],
+                updatedAt: new Date(),
               }
             : conv
         )
-      )
+        
+        // Sort by updatedAt (newest first)
+        return updatedConversations.sort((a, b) => 
+          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+        )
+      })
     } catch (error: any) {
       setError(error.message || 'Failed to send message')
     }
@@ -232,10 +245,72 @@ export default function MessagesPage() {
 
   // Handle conversation selection
   const handleConversationSelect = React.useCallback((conversation: Conversation) => {
+    // Leave previous conversation room if exists
+    if (currentConversation) {
+      leaveConversation(currentConversation.id)
+    }
+    
+    // Join new conversation room
+    joinConversation(conversation.id)
+    
     setCurrentConversation(conversation)
     setError('')
     fetchMessages(conversation.id)
-  }, [fetchMessages])
+  }, [fetchMessages, currentConversation, joinConversation, leaveConversation])
+
+  // Handle real-time messages
+  const handleNewMessage = React.useCallback((message: any) => {
+    // Only add message if it's for the current conversation and not from the current user
+    if (currentConversation && message.conversationId === currentConversation.id && message.senderId !== user?.id) {
+      setCurrentMessages(prev => [...prev, message])
+    }
+    
+    // Update conversations list to show the new message and move to top
+    setConversations(prev => {
+      const updatedConversations = prev.map(conv => 
+        conv.id === message.conversationId 
+          ? {
+              ...conv,
+              messages: [...conv.messages, message],
+              updatedAt: new Date(),
+            }
+          : conv
+      )
+      
+      // Sort by updatedAt (newest first)
+      return updatedConversations.sort((a, b) => 
+        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+      )
+    })
+  }, [currentConversation, user?.id])
+
+  const handleConversationUpdate = React.useCallback((conversation: Conversation) => {
+    // Update conversations list with the updated conversation and sort
+    setConversations(prev => {
+      const updatedConversations = prev.map(conv => 
+        conv.id === conversation.id 
+          ? conversation
+          : conv
+      )
+      
+      // Sort by updatedAt (newest first)
+      return updatedConversations.sort((a, b) => 
+        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+      )
+    })
+  }, [])
+
+  React.useEffect(() => {
+    // Register callbacks and get cleanup functions
+    const cleanupMessage = onNewMessage(handleNewMessage)
+    const cleanupConversation = onConversationUpdated(handleConversationUpdate)
+
+    // Cleanup function
+    return () => {
+      cleanupMessage?.()
+      cleanupConversation?.()
+    }
+  }, [handleNewMessage, handleConversationUpdate, onNewMessage, onConversationUpdated])
 
   // Load conversations on mount
   React.useEffect(() => {
@@ -253,16 +328,24 @@ export default function MessagesPage() {
   }
 
   return (
-    <MessagingApp
-      conversations={conversations}
-      currentConversation={currentConversation}
-      currentMessages={currentMessages}
-      currentUserId={user.id}
-      loading={loading}
-      error={error}
-      onConversationSelect={handleConversationSelect}
-      onSendMessage={sendMessage}
-      onStartConversation={startConversation}
-    />
+    <Box sx={{ 
+      height: 'calc(100vh - 200px)', 
+      width: '100%', 
+      position: 'relative',
+      overflow: 'hidden',
+      margin: 'auto', // Compensate for Container py: '64px' (32px top + 32px bottom)
+    }}>
+      <MessagingApp
+        conversations={conversations}
+        currentConversation={currentConversation}
+        currentMessages={currentMessages}
+        currentUserId={user.id}
+        loading={loading}
+        error={error}
+        onConversationSelect={handleConversationSelect}
+        onSendMessage={sendMessage}
+        onStartConversation={startConversation}
+      />
+    </Box>
   )
 } 

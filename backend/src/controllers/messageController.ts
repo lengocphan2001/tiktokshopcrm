@@ -1,6 +1,7 @@
 import { Request, Response } from 'express'
 import { MessageService } from '../services/messageService'
 import { ConversationService } from '../services/conversationService'
+import { sendToUser, sendToUsers } from '../index'
 
 export class MessageController {
   private messageService: MessageService
@@ -38,6 +39,20 @@ export class MessageController {
         recipientId,
         conversationId: finalConversationId,
       })
+
+      // Get conversation participants and send message to them
+      const conversation = await this.conversationService.getConversationById(finalConversationId, senderId)
+      if (conversation) {
+        const participantIds = conversation.participants
+          .filter(p => p.user.id !== senderId) // Don't send to sender
+          .map(p => p.user.id)
+        
+        // Send message to all participants
+        sendToUsers(participantIds, {
+          type: 'newMessage',
+          message
+        })
+      }
 
       res.status(201).json({
         success: true,
