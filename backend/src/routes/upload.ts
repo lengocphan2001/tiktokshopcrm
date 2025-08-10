@@ -28,7 +28,6 @@ router.post('/avatar', authenticateToken, handleUploadError, uploadAvatar, (req:
       }
     });
   } catch (error) {
-    console.error('Avatar upload error:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error'

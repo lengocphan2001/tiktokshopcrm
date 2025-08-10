@@ -70,7 +70,6 @@ export function SignInForm(): React.JSX.Element {
         // After refresh, GuestGuard will handle the redirect
         router.refresh();
       } catch (error) {
-        console.error('Login error:', error);
         setError('root', { 
           type: 'server', 
           message: 'Login failed. Please check your credentials and try again.' 

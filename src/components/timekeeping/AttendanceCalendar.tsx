@@ -102,7 +102,6 @@ export const AttendanceCalendar: React.FC<AttendanceCalendarProps> = ({ userId, 
   const [currentDate, setCurrentDate] = React.useState(() => {
     // Use Vietnam timezone for consistency with backend
     const vietnamNow = getVietnamDate()
-    console.log('Initializing calendar with Vietnam date:', vietnamNow.toISOString(), 'Month:', vietnamNow.getMonth() + 1)
     return vietnamNow
   })
   const [attendance, setAttendance] = React.useState<MonthlyAttendance | null>(null)
@@ -116,12 +115,7 @@ export const AttendanceCalendar: React.FC<AttendanceCalendarProps> = ({ userId, 
   const currentYear = currentDate.getFullYear()
   const currentMonth = currentDate.getMonth() + 1
   
-  // Debug logging
-  const vietnamNow = getVietnamDate()
-  console.log('Current Vietnam Date:', vietnamNow.toLocaleDateString('en-GB'))
-  console.log('Calendar State - Year:', currentYear, 'Month:', currentMonth)
-  console.log('Calendar State - Date:', currentDate.toLocaleDateString('en-GB'))
-  console.log('Day of Week (Vietnam):', vietnamNow.getUTCDay(), '(0 = Sunday, 1 = Monday, etc.)')
+  // Debug logging removed
 
   // Fetch attendance data
   const fetchAttendance = React.useCallback(async () => {
@@ -148,11 +142,8 @@ export const AttendanceCalendar: React.FC<AttendanceCalendarProps> = ({ userId, 
         throw new Error('Failed to fetch attendance data')
       }
 
-             const data = await response.json()
-       console.log('Attendance data received:', data.data)
-       console.log('Today from frontend:', new Date().toISOString().split('T')[0])
-       console.log('Today day in data:', data.data?.days.find((day: DayData) => day.isToday))
-       setAttendance(data.data)
+      const data = await response.json()
+      setAttendance(data.data)
     } catch (error: any) {
       setError(error.message || 'Failed to fetch attendance data')
     } finally {
@@ -206,16 +197,12 @@ export const AttendanceCalendar: React.FC<AttendanceCalendarProps> = ({ userId, 
 
   // Handle date click
   const handleDateClick = (day: DayData) => {
-    console.log('Date clicked:', day)
-    console.log('isFuture:', day.isFuture, 'isToday:', day.isToday, 'isPast:', day.isPast)
     
     // Show modal for past days and today, but prevent future day editing
     if (day.isFuture) {
-      console.log('Future day clicked, ignoring')
       return
     }
 
-    console.log('Opening dialog for date:', day.date)
     setSelectedDate(day.date)
     setEditStatus(day.status || 'PRESENT')
     setEditNotes(day.notes || '')
@@ -243,13 +230,7 @@ export const AttendanceCalendar: React.FC<AttendanceCalendarProps> = ({ userId, 
     const currentMonth = vietnamNow.getMonth()
     const currentYear = vietnamNow.getFullYear()
     
-    console.log('Checking calendar alignment...')
-    console.log('Vietnam Now:', vietnamNow.toLocaleDateString('en-GB'))
-    console.log('Calendar State:', currentDate.toLocaleDateString('en-GB'))
-    console.log('Should reset:', currentDate.getMonth() !== currentMonth || currentDate.getFullYear() !== currentYear)
-    
     if (currentDate.getMonth() !== currentMonth || currentDate.getFullYear() !== currentYear) {
-      console.log('Resetting calendar to current Vietnam month:', currentMonth + 1, currentYear)
       setCurrentDate(vietnamNow)
     }
   }, [currentDate])
@@ -503,25 +484,20 @@ export const AttendanceCalendar: React.FC<AttendanceCalendarProps> = ({ userId, 
                 {/* Leading empty cells for alignment */}
                 {attendance.days.length > 0 && (() => {
                   const firstDayOfWeek = attendance.days[0].dayOfWeek
-                  console.log('First day of month falls on:', firstDayOfWeek, '(0 = Sunday)')
                   return [...Array(firstDayOfWeek)].map((_, idx) => (
                     <Box key={`start-offset-${idx}`} />
                   ))
                 })()}
 
-                {attendance.days.map(day => {
-                  console.log('Rendering day:', day.date, 'Day of week:', day.dayOfWeek)
-                  return (
-                    <Box key={day.date}>
-                      {renderDayCell(day)}
-                    </Box>
-                  )
-                })}
+                {attendance.days.map(day => (
+                  <Box key={day.date}>
+                    {renderDayCell(day)}
+                  </Box>
+                ))}
 
                 {/* Trailing empty cells to complete the grid */}
                 {attendance.days.length > 0 && (() => {
                   const lastDayOfWeek = attendance.days[attendance.days.length - 1].dayOfWeek
-                  console.log('Last day of month falls on:', lastDayOfWeek, '(0 = Sunday)')
                   return [...Array(6 - lastDayOfWeek)].map((_, idx) => (
                     <Box key={`end-offset-${idx}`} />
                   ))

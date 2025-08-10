@@ -75,7 +75,6 @@ export const MessageList: React.FC<MessageListProps> = ({
       return currentDate > latestDate ? current : latest
     })
     
-    console.log(`Conversation ${conversation.id} last message:`, lastMessage?.content, lastMessage?.createdAt)
     return lastMessage
   }
 

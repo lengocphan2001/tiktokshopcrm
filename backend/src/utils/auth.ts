@@ -57,7 +57,6 @@ export const authenticateUser = async (email: string, password: string) => {
     const { password: _, ...userWithoutPassword } = user
     return userWithoutPassword
   } catch (error) {
-    console.error('Authentication error:', error)
     return null
   }
 }

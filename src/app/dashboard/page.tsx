@@ -1,5 +1,5 @@
 import * as React from 'react';
-import type { Metadata } from 'next';
+
 import Grid from '@mui/material/Grid';
 import dayjs from 'dayjs';
 
@@ -11,7 +11,7 @@ import { Sales } from '@/components/dashboard/overview/sales';
 import { TasksProgress } from '@/components/dashboard/overview/tasks-progress';
 import { TotalProfit } from '@/components/dashboard/overview/total-profit';
 import { Traffic } from '@/components/dashboard/overview/traffic';
-
+import type { Metadata } from 'next';
 export const metadata = { title: `Overview | Dashboard | ${config.site.name}` } satisfies Metadata;
 
 export default function Page(): React.JSX.Element {

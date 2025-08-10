@@ -172,8 +172,7 @@ export class AttendanceService {
       const isToday = dateKey === todayVietnam.toISOString().split('T')[0]
       const isPast = currentDate < todayVietnam
       const isFuture = currentDate > todayVietnam
-      
-      console.log('Date:', dateKey, 'Day of Week:', dayOfWeek, 'Is Today:', isToday) // Debug log
+
       
       const attendance = attendanceMap.get(dateKey)
       

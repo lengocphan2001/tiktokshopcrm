@@ -120,7 +120,6 @@ export function AccountDetailsForm(): React.JSX.Element {
       }
     } catch (error) {
       setError('Failed to update profile');
-      console.error('Update profile error:', error);
     } finally {
       setLoading(false);
     }
@@ -149,7 +148,6 @@ export function AccountDetailsForm(): React.JSX.Element {
       }
     } catch (error) {
       setError('Failed to upload avatar');
-      console.error('Upload avatar error:', error);
     }
   };
 

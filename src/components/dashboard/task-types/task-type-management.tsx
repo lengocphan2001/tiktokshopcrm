@@ -87,7 +87,6 @@ export function TaskTypeManagement(): React.JSX.Element {
         setTotalTaskTypes(response.data.total);
       }
     } catch (error) {
-      console.error('Error loading task types:', error);
       setErrorMessage('Failed to load task types');
     } finally {
       setLoading(false);
@@ -214,7 +213,6 @@ export function TaskTypeManagement(): React.JSX.Element {
       handleCloseDialog();
       loadTaskTypes();
     } catch (error) {
-      console.error('Error saving task type:', error);
       setErrorMessage(error instanceof Error ? error.message : 'Failed to save task type');
     }
   };
@@ -228,7 +226,6 @@ export function TaskTypeManagement(): React.JSX.Element {
       handleCloseDeleteDialog();
       loadTaskTypes();
     } catch (error) {
-      console.error('Error deleting task type:', error);
       setErrorMessage(error instanceof Error ? error.message : 'Failed to delete task type');
     }
   };

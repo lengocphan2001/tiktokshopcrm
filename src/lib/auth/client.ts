@@ -78,7 +78,6 @@ class AuthClient {
         return { error: response.message || 'Login failed' };
       }
     } catch (error) {
-      console.error('Login error:', error);
       return { 
         error: error instanceof Error ? error.message : 'Login failed. Please check your credentials.' 
       };
@@ -158,7 +157,6 @@ class AuthClient {
         return { data: null };
       }
     } catch (error) {
-      console.error('Get user error:', error);
       
       // Fallback to localStorage
       const userData = localStorage.getItem('user-data');

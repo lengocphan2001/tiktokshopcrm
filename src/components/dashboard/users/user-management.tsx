@@ -134,13 +134,6 @@ export function UserManagement(): React.JSX.Element {
 
   // Validation functions
   const validateCreateUser = (): boolean => {
-    console.log('=== VALIDATION DEBUG ===');
-    console.log('Validating create user data:', createUserData);
-    console.log('firstName:', createUserData.firstName, 'type:', typeof createUserData.firstName);
-    console.log('lastName:', createUserData.lastName, 'type:', typeof createUserData.lastName);
-    console.log('email:', createUserData.email, 'type:', typeof createUserData.email);
-    console.log('password:', createUserData.password, 'type:', typeof createUserData.password);
-    
     const errors: Record<string, string> = {};
 
     // Required fields
@@ -230,10 +223,7 @@ export function UserManagement(): React.JSX.Element {
     return Object.keys(errors).length === 0;
   };
 
-  // Debug information
-  console.log('Current user:', currentUser);
-  console.log('Is admin:', isAdmin);
-  console.log('User role:', currentUser?.role);
+  // Debug information removed
 
   const loadUsers = React.useCallback(async () => {
     try {
@@ -285,12 +275,7 @@ export function UserManagement(): React.JSX.Element {
       return;
     }
 
-    console.log('=== CREATE USER DEBUG ===');
-    console.log('Create user data before API call:', createUserData);
-    console.log('Create user data type:', typeof createUserData);
-    console.log('Create user data keys:', Object.keys(createUserData));
-    console.log('Create user data values:', Object.values(createUserData));
-
+    
     try {
       const token = localStorage.getItem('auth-token');
       if (!token) {
@@ -330,7 +315,7 @@ export function UserManagement(): React.JSX.Element {
       }
     } catch (error) {
       setError('Failed to create user');
-      console.error('Create user error:', error);
+      
     }
   };
 
@@ -340,8 +325,6 @@ export function UserManagement(): React.JSX.Element {
   };
 
   const handleEditUser = (user: User) => {
-    console.log('=== EDIT USER DEBUG ===');
-    console.log('User to edit:', user);
     
     const editData = {
       firstName: user.firstName,
@@ -357,7 +340,6 @@ export function UserManagement(): React.JSX.Element {
       status: user.status,
     };
     
-    console.log('Setting edit data:', editData);
     
     setSelectedUser(user);
     setEditUserData(editData);
@@ -427,16 +409,7 @@ export function UserManagement(): React.JSX.Element {
         }
       });
 
-      console.log('Sending update data:', filteredData);
-      console.log('Original edit data:', editUserData);
-      console.log('Selected user ID:', selectedUser?.id);
-      console.log('Edit form data keys:', Object.keys(editUserData));
-      console.log('Edit form data values:', Object.values(editUserData));
-      console.log('Edit form data type:', typeof editUserData);
-      console.log('Edit form data is object:', typeof editUserData === 'object');
-      console.log('Edit form data is null:', editUserData === null);
-      console.log('Edit form data is undefined:', editUserData === undefined);
-
+      
       const response = await usersApi.updateUser(token, selectedUser.id, filteredData);
       
       if (response.success) {
@@ -457,7 +430,7 @@ export function UserManagement(): React.JSX.Element {
       }
     } catch (error) {
       setError('Failed to update user');
-      console.error('Update user error:', error);
+      
     }
   };
 
@@ -688,7 +661,7 @@ export function UserManagement(): React.JSX.Element {
                   label="First Name"
                   value={createUserData.firstName}
                   onChange={(e) => {
-                    console.log('First name changed to:', e.target.value);
+                    
                     setCreateUserData({ ...createUserData, firstName: e.target.value });
                     // Clear error when user starts typing
                     if (createErrors.firstName) {
@@ -755,7 +728,7 @@ export function UserManagement(): React.JSX.Element {
                   type="password"
                   value={createUserData.password}
                   onChange={(e) => {
-                    console.log('Password changed to:', e.target.value);
+                    
                     setCreateUserData({ ...createUserData, password: e.target.value });
                     // Clear error when user starts typing
                     if (createErrors.password) {
@@ -1045,7 +1018,7 @@ export function UserManagement(): React.JSX.Element {
                   label="First Name"
                   value={editUserData.firstName || ''}
                   onChange={(e) => {
-                    console.log('First name changed:', e.target.value);
+                    
                     setEditUserData({ ...editUserData, firstName: e.target.value });
                     // Clear error when user starts typing
                     if (editErrors.firstName) {

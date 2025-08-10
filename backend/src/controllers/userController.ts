@@ -23,7 +23,7 @@ export class UserController {
         data: user
       })
     } catch (error) {
-      console.error('Create user error:', error)
+      
       
       // Handle validation errors
       if (error instanceof Error) {
@@ -50,17 +50,13 @@ export class UserController {
 
   async updateUser(req: AuthenticatedRequest, res: Response) {
     try {
-      console.log('=== UPDATE USER CONTROLLER DEBUG ===');
-      console.log('Request body:', req.body);
-      console.log('Request params:', req.params);
+      
       
       const { id } = req.params
       const data: UpdateUserInput = req.body
       const updatedBy = req.user!.id
 
-      console.log('User ID:', id);
-      console.log('Update data:', data);
-      console.log('Updated by:', updatedBy);
+      
 
       // Check if user exists
       const existingUser = await this.userService.getUserById(id)
@@ -71,12 +67,11 @@ export class UserController {
         })
       }
 
-      console.log('Existing user:', existingUser);
+      
 
       const user = await this.userService.updateUser(id, data, updatedBy)
 
-      console.log('Updated user response:', user);
-      console.log('=====================================');
+      
 
       return res.status(200).json({
         success: true,
@@ -84,7 +79,7 @@ export class UserController {
         data: user
       })
     } catch (error) {
-      console.error('Update user error:', error)
+      
       
       // Handle validation errors
       if (error instanceof Error) {
@@ -137,7 +132,7 @@ export class UserController {
         data: user
       })
     } catch (error) {
-      console.error('Update own profile error:', error)
+      
       
       // Handle validation errors
       if (error instanceof Error) {
@@ -182,7 +177,7 @@ export class UserController {
         message: 'User deleted successfully'
       })
     } catch (error) {
-      console.error('Delete user error:', error)
+      
       return res.status(500).json({
         success: false,
         message: 'Internal server error'
@@ -207,7 +202,7 @@ export class UserController {
         data: user
       })
     } catch (error) {
-      console.error('Get user error:', error)
+      
       return res.status(500).json({
         success: false,
         message: 'Internal server error'
@@ -226,7 +221,7 @@ export class UserController {
         data: result
       })
     } catch (error) {
-      console.error('Get users error:', error)
+      
       return res.status(500).json({
         success: false,
         message: 'Internal server error'
@@ -256,7 +251,7 @@ export class UserController {
         data: result
       })
     } catch (error) {
-      console.error('Get users for messaging error:', error)
+      
       return res.status(500).json({
         success: false,
         message: 'Internal server error'
@@ -286,7 +281,7 @@ export class UserController {
         data: user
       })
     } catch (error) {
-      console.error('Deactivate user error:', error)
+      
       return res.status(500).json({
         success: false,
         message: 'Internal server error'
@@ -316,7 +311,7 @@ export class UserController {
         data: user
       })
     } catch (error) {
-      console.error('Activate user error:', error)
+      
       return res.status(500).json({
         success: false,
         message: 'Internal server error'

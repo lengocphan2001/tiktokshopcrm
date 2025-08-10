@@ -120,7 +120,6 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
 
     // Check cache duration
     if (!force && now - lastFetchTimeRef.current < CACHE_DURATION) {
-      console.log('Using cached notifications, last fetch was', now - lastFetchTimeRef.current, 'ms ago')
       return
     }
 
@@ -138,7 +137,6 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
           return
         }
 
-        console.log('Fetching notifications from API...')
         const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001'}/api/notifications`, {
           method: 'GET',
           headers: {
@@ -157,10 +155,9 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
           
           // Update last fetch time
           lastFetchTimeRef.current = Date.now()
-          console.log('Notifications fetched successfully')
         }
       } catch (error) {
-        console.error('Error fetching notifications:', error)
+        
       } finally {
         isFetchingRef.current = false
       }
@@ -173,7 +170,6 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
       // Check if notification is already read
       const notification = notifications.find(n => n.id === notificationId)
       if (notification && notification.status === 'READ') {
-        console.log('Notification already read, skipping API call')
         return
       }
       
@@ -182,7 +178,6 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
         return
       }
 
-      console.log('Marking notification as read:', notificationId)
       const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001'}/api/notifications/${notificationId}/read`, {
         method: 'PUT',
         headers: {
@@ -205,7 +200,6 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
         }
       }
     } catch (error) {
-      console.error('Error marking notification as read:', error)
     }
   }, [notifications])
 
@@ -215,7 +209,6 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
       // Check if all notifications are already read
       const unreadNotifications = notifications.filter(n => n.status === 'UNREAD')
       if (unreadNotifications.length === 0) {
-        console.log('All notifications already read, skipping API call')
         return
       }
 
@@ -224,7 +217,6 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
         return
       }
 
-      console.log('Marking all notifications as read')
       const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001'}/api/notifications/mark-all-read`, {
         method: 'PUT',
         headers: {
@@ -240,7 +232,6 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
         setUnreadCount(0)
       }
     } catch (error) {
-      console.error('Error marking all notifications as read:', error)
     }
   }, [notifications])
 
@@ -257,7 +248,6 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
         conversationId
       }))
     } else {
-      console.log('WebSocket not connected, skipping join conversation')
     }
   }
 
@@ -268,7 +258,6 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
         conversationId
       }))
     } else {
-      console.log('WebSocket not connected, skipping leave conversation')
     }
   }
 
@@ -299,23 +288,19 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
   // Initialize WebSocket connection
   const initializeWebSocket = React.useCallback(() => {
     if (!userId) {
-      console.log('No userId available for WebSocket connection')
       return
     }
 
     const token = getAuthToken()
     if (!token) {
-      console.log('No auth token available for WebSocket connection')
       return
     }
 
-    console.log('Initializing WebSocket connection for user:', userId)
-    console.log('Token available:', !!token)
+    
 
     // Connect immediately for instant messaging
     const currentToken = getAuthToken()
     if (!currentToken) {
-      console.log('Token not available')
       return
     }
 
@@ -328,18 +313,14 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001'
     const wsUrl = backendUrl.replace('http', 'ws').replace('https', 'wss')
     
-    console.log('Backend URL:', backendUrl)
-    console.log('WebSocket URL:', wsUrl)
+    
     
     let ws: WebSocket
     
     try {
       const fullWsUrl = `${wsUrl}/ws?token=${currentToken}`
-      console.log('Full WebSocket URL:', fullWsUrl)
       ws = new WebSocket(fullWsUrl)
       wsRef.current = ws
-      
-      console.log('Attempting WebSocket connection to:', `${wsUrl}/ws`)
     } catch (error) {
       console.error('Failed to create WebSocket connection:', error)
       setIsConnected(false)
@@ -348,7 +329,6 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
 
       ws.onopen = () => {
         setIsConnected(true)
-        console.log('WebSocket connected')
         
         // Authenticate the user
         ws.send(JSON.stringify({
@@ -363,11 +343,9 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
       ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data)
-          console.log('WebSocket message received:', data)
           
           switch (data.type) {
             case 'newMessage':
-              console.log('New message received via WebSocket:', data.message)
               messageCallbacksRef.current.forEach(callback => callback(data.message))
               break
               
@@ -405,13 +383,11 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
               break
           }
         } catch (error) {
-          console.error('Error parsing WebSocket message:', error)
         }
       }
 
       ws.onclose = () => {
         setIsConnected(false)
-        console.log('WebSocket disconnected')
         
         // Attempt to reconnect after 3 seconds
         if (reconnectTimeoutRef.current) {
@@ -423,26 +399,20 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
       }
 
       ws.onerror = (error) => {
-        console.log('WebSocket URL attempted:', `${wsUrl}/ws?token=${currentToken.substring(0, 20)}...`)
-        console.log('Full WebSocket URL:', `${wsUrl}/ws?token=${currentToken}`)
-        console.log('Token length:', currentToken.length)
         setIsConnected(false)
       }
   }, [userId, fetchNotifications])
 
   React.useEffect(() => {
     if (!userId) {
-      console.log('No userId available, skipping WebSocket initialization')
       return
     }
 
     const token = getAuthToken()
     if (!token) {
-      console.log('No auth token available, skipping WebSocket initialization')
       return
     }
 
-    console.log('User authenticated, initializing WebSocket connection')
     initializeWebSocket()
 
     // Cleanup on unmount

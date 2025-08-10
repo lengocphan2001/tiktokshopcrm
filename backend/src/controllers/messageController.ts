@@ -48,7 +48,6 @@ export class MessageController {
           .map(p => p.user.id)
         
         // Send message to all participants
-        console.log(`Sending WebSocket notification to participants: ${participantIds.join(', ')}`)
         sendToUsers(participantIds, {
           type: 'newMessage',
           message
@@ -61,7 +60,6 @@ export class MessageController {
         data: message,
       })
     } catch (error: any) {
-      console.error('Send message error:', error)
       res.status(400).json({
         success: false,
         message: error.message || 'Failed to send message',
@@ -87,7 +85,7 @@ export class MessageController {
         data: messages,
       })
     } catch (error: any) {
-      console.error('Get conversation messages error:', error)
+
       res.status(400).json({
         success: false,
         message: error.message || 'Failed to get messages',
@@ -108,7 +106,7 @@ export class MessageController {
         data: message,
       })
     } catch (error: any) {
-      console.error('Mark message as read error:', error)
+
       res.status(400).json({
         success: false,
         message: error.message || 'Failed to mark message as read',
@@ -128,7 +126,7 @@ export class MessageController {
         message: 'Conversation marked as read',
       })
     } catch (error: any) {
-      console.error('Mark conversation as read error:', error)
+
       res.status(400).json({
         success: false,
         message: error.message || 'Failed to mark conversation as read',
@@ -147,7 +145,7 @@ export class MessageController {
         data: { count },
       })
     } catch (error: any) {
-      console.error('Get unread count error:', error)
+
       res.status(400).json({
         success: false,
         message: error.message || 'Failed to get unread count',
@@ -175,7 +173,6 @@ export class MessageController {
         data: messages,
       })
     } catch (error: any) {
-      console.error('Search messages error:', error)
       res.status(400).json({
         success: false,
         message: error.message || 'Failed to search messages',
@@ -195,7 +192,6 @@ export class MessageController {
         message: 'Message deleted successfully',
       })
     } catch (error: any) {
-      console.error('Delete message error:', error)
       res.status(400).json({
         success: false,
         message: error.message || 'Failed to delete message',

@@ -42,7 +42,6 @@ export const NotificationPermission: React.FC = () => {
         })
       }
     } catch (error) {
-      console.error('Error requesting notification permission:', error)
     }
   }
 

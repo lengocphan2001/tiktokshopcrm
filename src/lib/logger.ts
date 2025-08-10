@@ -54,9 +54,9 @@ export class Logger {
 		}
 
 		if (level === LogLevel.ERROR) {
-			console.error(prefix, ...args);
+
 		} else {
-			console.log(prefix, ...args);
+			
 		}
 	}
 }

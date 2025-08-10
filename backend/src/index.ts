@@ -49,7 +49,6 @@ const connectedUsers = new Map<string, WebSocket>()
 
 // WebSocket connection handler
 wss.on('connection', (ws, request) => {
-  console.log('WebSocket client connected')
   
   // Extract token from URL query parameters
   const url = new URL(request.url!, `http://${request.headers.host}`)
@@ -67,7 +66,6 @@ wss.on('connection', (ws, request) => {
     
     // Store user connection
     connectedUsers.set(userId, ws)
-    console.log(`User ${userId} connected via WebSocket`)
     
     // Send authentication success
     ws.send(JSON.stringify({
@@ -89,27 +87,21 @@ wss.on('connection', (ws, request) => {
             break
             
           case 'joinConversation':
-            // Handle joining conversation room
-            console.log(`User ${userId} joined conversation: ${message.conversationId}`)
             break
             
           case 'leaveConversation':
             // Handle leaving conversation room
-            console.log(`User ${userId} left conversation: ${message.conversationId}`)
             break
         }
       } catch (error) {
-        console.error('Error parsing WebSocket message:', error)
       }
     })
     
     ws.on('close', () => {
       connectedUsers.delete(userId)
-      console.log(`User ${userId} disconnected`)
     })
     
   } catch (error) {
-    console.error('WebSocket authentication error:', error)
     ws.close(1008, 'Invalid token')
   }
 })
@@ -118,10 +110,10 @@ wss.on('connection', (ws, request) => {
 export const sendToUser = (userId: string, data: any) => {
   const ws = connectedUsers.get(userId)
   if (ws && ws.readyState === 1) { // WebSocket.OPEN
-    console.log(`Sending WebSocket message to user ${userId}:`, data.type)
+
     ws.send(JSON.stringify(data))
   } else {
-    console.log(`User ${userId} not connected or WebSocket not ready (state: ${ws?.readyState})`)
+
   }
 }
 
@@ -174,16 +166,15 @@ app.get('/health', (req, res) => {
 const PORT = process.env.PORT || 3001
 
 server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`)
-  console.log(`WebSocket server running on ws://localhost:${PORT}/ws`)
+
 })
 
 // Graceful shutdown
 process.on('SIGTERM', async () => {
-  console.log('SIGTERM received, shutting down gracefully')
+
   await prisma.$disconnect()
   server.close(() => {
-    console.log('Server closed')
+
     process.exit(0)
   })
 }) 

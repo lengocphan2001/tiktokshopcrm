@@ -96,7 +96,6 @@ export default function MessagesPage() {
       }
 
       const data = await response.json()
-      console.log('Fetched conversations from API:', data.data?.length || 0)
       
       // Sort conversations by updatedAt (newest first)
       const sortedConversations = (data.data || []).sort((a: Conversation, b: Conversation) => 
@@ -104,10 +103,7 @@ export default function MessagesPage() {
       )
       
       // Log the messages in each conversation
-      sortedConversations.forEach(conv => {
-        console.log(`Conversation ${conv.id} has ${conv.messages?.length || 0} messages:`, 
-          conv.messages?.map(m => `${m.content} (${m.createdAt})`))
-      })
+      
       
       setConversations(sortedConversations)
     } catch (error: any) {
@@ -224,7 +220,7 @@ export default function MessagesPage() {
         const data = await response.json()
         const realMessage = data.data
         
-        console.log('Backend response received, updating optimistic message:', realMessage.id)
+        
         
         // Update with real message from server (replace optimistic message)
         setCurrentMessages(prev => 
@@ -252,7 +248,6 @@ export default function MessagesPage() {
         })
       })
       .catch((error) => {
-        console.error('Error sending message:', error)
         setError('Failed to send message')
         
         // Remove optimistic message on error
@@ -277,7 +272,6 @@ export default function MessagesPage() {
         })
       })
       .catch((error) => {
-        console.error('Message send error:', error)
         // Remove optimistic message on error
         setCurrentMessages(prev => prev.filter(msg => msg.id !== tempId))
         setConversations(prev => {
@@ -364,7 +358,6 @@ export default function MessagesPage() {
 
   // Handle real-time messages
   const handleNewMessage = React.useCallback((message: any) => {
-    console.log('Received new message:', message)
     
     // Only add message to current messages if it's for the current conversation and not from the current user
     // AND if the message doesn't already exist (to prevent duplicates)
@@ -373,7 +366,6 @@ export default function MessagesPage() {
         // Check if message already exists to prevent duplicates
         const messageExists = prev.some(m => m.id === message.id)
         if (messageExists) {
-          console.log('Message already exists in current messages, skipping duplicate')
           return prev
         }
         return [...prev, message]
@@ -395,8 +387,6 @@ export default function MessagesPage() {
           : conv
       )
       
-      console.log(`Updated conversation ${message.conversationId} with new message:`, message.content)
-      console.log(`Conversation now has ${updatedConversations.find(c => c.id === message.conversationId)?.messages?.length} messages`)
       
       // Sort by updatedAt (newest first)
       return updatedConversations.sort((a, b) => 

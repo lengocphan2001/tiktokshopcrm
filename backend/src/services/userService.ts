@@ -59,10 +59,7 @@ export class UserService {
   }
 
   async updateUser(id: string, data: UpdateUserInput, updatedBy: string): Promise<User> {
-    console.log('=== UPDATE USER DEBUG ===');
-    console.log('User ID:', id);
-    console.log('Update data:', data);
-    console.log('Updated by:', updatedBy);
+    
     
     // Check for existing user with same email (if email is being updated)
     if (data.email) {
@@ -100,7 +97,7 @@ export class UserService {
       }
     });
     
-    console.log('Clean data (filtered):', cleanData);
+    
     
     // Handle dateOfBirth properly - convert empty string to null, valid date to Date object
     if (data.dateOfBirth) {
@@ -119,10 +116,10 @@ export class UserService {
       updatedAt: new Date() // Force update timestamp
     }
 
-    console.log('Final update data:', updateData);
+    
 
     // Test with individual field updates to see which ones work
-    console.log('Testing individual field updates...');
+    
     
     const testUpdates: any = {};
     if (updateData.firstName) testUpdates.firstName = updateData.firstName;
@@ -138,15 +135,14 @@ export class UserService {
     if (updateData.status) testUpdates.status = updateData.status;
     if (updateData.isActive !== undefined) testUpdates.isActive = updateData.isActive;
     
-    console.log('Test updates:', testUpdates);
+    
 
     const user = await prisma.user.update({
       where: { id },
       data: testUpdates,
     })
 
-    console.log('Updated user from database:', user);
-    console.log('========================');
+    
 
     return this.formatUserResponse(user)
   }

@@ -119,7 +119,6 @@ export const NotificationBell: React.FC = () => {
         // You can implement navigation here
       }
     } catch (error) {
-      console.error('Error marking notification as read:', error)
     }
   }
 
@@ -127,7 +126,6 @@ export const NotificationBell: React.FC = () => {
     try {
       await markAllNotificationsAsRead()
     } catch (error) {
-      console.error('Error marking all notifications as read:', error)
     }
   }
 

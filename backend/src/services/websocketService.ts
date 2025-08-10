@@ -45,12 +45,12 @@ export class WebSocketService {
 
   private setupEventHandlers() {
     this.io.on('connection', (socket) => {
-      console.log(`User connected: ${socket.id}`)
+      
 
       // Handle user authentication
       socket.on('authenticate', (userId: string) => {
         this.userSockets.set(userId, socket.id)
-        console.log(`User ${userId} authenticated with socket ${socket.id}`)
+        
         
         // Join user to their personal room
         socket.join(`user:${userId}`)
@@ -59,13 +59,13 @@ export class WebSocketService {
       // Handle joining conversation room
       socket.on('joinConversation', (conversationId: string) => {
         socket.join(`conversation:${conversationId}`)
-        console.log(`User joined conversation: ${conversationId}`)
+        
       })
 
       // Handle leaving conversation room
       socket.on('leaveConversation', (conversationId: string) => {
         socket.leave(`conversation:${conversationId}`)
-        console.log(`User left conversation: ${conversationId}`)
+        
       })
 
       // Handle disconnection
@@ -74,7 +74,7 @@ export class WebSocketService {
         for (const [userId, socketId] of this.userSockets.entries()) {
           if (socketId === socket.id) {
             this.userSockets.delete(userId)
-            console.log(`User ${userId} disconnected`)
+            
             break
           }
         }
@@ -94,9 +94,8 @@ export class WebSocketService {
     
     if (socketId) {
       this.io.to(socketId).emit('newNotification', notification)
-      console.log(`Notification sent to user ${userId}: ${notification.title}`)
     } else {
-      console.log(`User ${userId} is not connected`)
+      
     }
   }
 
@@ -130,7 +129,6 @@ export class WebSocketService {
   // Send message to conversation participants
   sendMessageToConversation(conversationId: string, message: MessagePayload) {
     this.io.to(`conversation:${conversationId}`).emit('newMessage', message)
-    console.log(`Message sent to conversation ${conversationId}: ${message.content}`)
   }
 
   // Send message to specific user
@@ -139,15 +137,14 @@ export class WebSocketService {
     
     if (socketId) {
       this.io.to(socketId).emit('newMessage', message)
-      console.log(`Message sent to user ${userId}: ${message.content}`)
+      
     } else {
-      console.log(`User ${userId} is not connected`)
+      
     }
   }
 
   // Update conversation for all participants
   updateConversationForParticipants(conversationId: string, conversation: any) {
     this.io.to(`conversation:${conversationId}`).emit('conversationUpdated', conversation)
-    console.log(`Conversation ${conversationId} updated for all participants`)
   }
 } 

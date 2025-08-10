@@ -92,7 +92,6 @@ export const UserSelector: React.FC<UserSelectorProps> = ({
       setUsers(otherUsers)
       setFilteredUsers(otherUsers)
     } catch (error) {
-      console.error('Failed to fetch users:', error)
       setUsers([])
       setFilteredUsers([])
     } finally {

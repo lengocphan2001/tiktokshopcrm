@@ -54,8 +54,7 @@ export class NotificationHelper {
         // Non-blocking
       }
     } catch (error) {
-      console.error('Error sending task created notification:', error)
-      // Don't throw the error to avoid breaking the task creation
+      // Silent catch to avoid breaking task creation
     }
   }
 
@@ -92,8 +91,7 @@ export class NotificationHelper {
         sendToUser(task.createdById, { type: 'newNotification', notification: payload })
       } catch {}
     } catch (error) {
-      console.error('Error sending task updated notification:', error)
-      // Don't throw the error to avoid breaking the task update
+      // Silent catch to avoid breaking the task update
     }
   }
 
@@ -130,7 +128,7 @@ export class NotificationHelper {
         sendToUser(task.createdById, { type: 'newNotification', notification: payload })
       } catch {}
     } catch (error) {
-      console.error('Error sending task status changed notification:', error)
+      // Silent catch
     }
   }
 
@@ -166,7 +164,7 @@ export class NotificationHelper {
         sendToUser(task.createdById, { type: 'newNotification', notification: payload })
       } catch {}
     } catch (error) {
-      console.error('Error sending task result updated notification:', error)
+      // Silent catch
     }
   }
 
@@ -202,7 +200,7 @@ export class NotificationHelper {
         sendToUser(task.createdById, { type: 'newNotification', notification: payload })
       } catch {}
     } catch (error) {
-      console.error('Error sending task assigned notification:', error)
+      // Silent catch
     }
   }
 

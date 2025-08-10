@@ -90,7 +90,6 @@ export function MyTasks(): React.JSX.Element {
       }
     } catch (error) {
       setError('Failed to load tasks');
-      console.error('Load tasks error:', error);
     } finally {
       setLoading(false);
     }
@@ -169,7 +168,7 @@ export function MyTasks(): React.JSX.Element {
       }
     } catch (error) {
       setError('Failed to update task');
-      console.error('Update task error:', error);
+      
     }
   };
 

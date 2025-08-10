@@ -187,7 +187,6 @@ export function TaskManagement(): React.JSX.Element {
       }
     } catch (error) {
       setError('Failed to load tasks');
-      console.error('Load tasks error:', error);
     } finally {
       setLoading(false);
     }
@@ -204,7 +203,6 @@ export function TaskManagement(): React.JSX.Element {
         setTaskTypes(response.data.taskTypes);
       }
     } catch (error) {
-      console.error('Load task types error:', error);
     }
   }, []);
 
@@ -218,7 +216,6 @@ export function TaskManagement(): React.JSX.Element {
         setUsers(response.data.users);
       }
     } catch (error) {
-      console.error('Load users error:', error);
     }
   }, []);
 
@@ -296,7 +293,6 @@ export function TaskManagement(): React.JSX.Element {
       }
     } catch (error) {
       setError('Failed to create task');
-      console.error('Create task error:', error);
     }
   };
 
@@ -352,7 +348,6 @@ export function TaskManagement(): React.JSX.Element {
       }
     } catch (error) {
       setError('Failed to delete task');
-      console.error('Delete task error:', error);
     }
   };
 
@@ -394,7 +389,6 @@ export function TaskManagement(): React.JSX.Element {
       }
     } catch (error) {
       setError('Failed to update task');
-      console.error('Update task error:', error);
     }
   };
 

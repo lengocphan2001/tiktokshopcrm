@@ -68,7 +68,6 @@ export function AvatarUpload({
         setUploadError(response.message || 'Upload failed');
       }
     } catch (error) {
-      console.error('Upload error:', error);
       setUploadError('Failed to upload avatar');
     } finally {
       setUploading(false);
