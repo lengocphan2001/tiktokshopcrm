@@ -16,6 +16,7 @@ import messageRoutes from './routes/messages'
 import notificationRoutes from './routes/notifications'
 import uploadRoutes from './routes/upload'
 import { timeRecordRoutes } from './routes/timeRecords'
+import { attendanceRoutes } from './routes/attendance'
 
 // Import services
 import { WebSocketService } from './services/websocketService'
@@ -26,7 +27,7 @@ import { authenticateToken } from './middleware/auth'
 
 const app = express()
 const server = createServer(app)
-const prisma = new PrismaClient()
+import { prisma } from './config/database'
 
 // Socket.IO server (for notifications)
 const io = new SocketIOServer(server, {
@@ -163,6 +164,7 @@ app.use('/api/messages', authenticateToken, messageRoutes)
 app.use('/api/notifications', authenticateToken, notificationRoutes)
 app.use('/api/upload', authenticateToken, uploadRoutes)
 app.use('/api/time-records', timeRecordRoutes)
+app.use('/api/attendance', attendanceRoutes)
 
 // Health check endpoint
 app.get('/health', (req, res) => {

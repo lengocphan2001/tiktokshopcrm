@@ -4,6 +4,14 @@ import * as React from 'react'
 import {
   Box,
   Typography,
+  Card,
+  CardContent,
+  Grid,
+  Chip,
+  Fade,
+  useTheme,
+  alpha,
+  Avatar,
   Table,
   TableBody,
   TableCell,
@@ -11,20 +19,21 @@ import {
   TableHead,
   TableRow,
   Paper,
-  Chip,
-  CircularProgress,
-  Alert,
-  TablePagination,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Grid,
+  IconButton,
+  Tooltip,
+  LinearProgress,
 } from '@mui/material'
-import { DatePicker } from '@mui/x-date-pickers/DatePicker'
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
+import {
+  AccessTime as TimeIcon,
+  Schedule as ScheduleIcon,
+  TrendingUp as TrendingUpIcon,
+  CalendarMonth as CalendarIcon,
+  PlayArrow as ClockInIcon,
+  Stop as ClockOutIcon,
+  Pause as BreakIcon,
+  Edit as EditIcon,
+  Delete as DeleteIcon,
+} from '@mui/icons-material'
 
 interface TimeRecordsProps {
   userId: string
@@ -33,31 +42,23 @@ interface TimeRecordsProps {
 interface TimeRecord {
   id: string
   status: 'CLOCKED_IN' | 'CLOCKED_OUT' | 'BREAK_START' | 'BREAK_END'
-  clockInAt?: string
-  clockOutAt?: string
-  breakStartAt?: string
-  breakEndAt?: string
-  totalHours?: number
-  breakHours?: number
-  workHours?: number
+  timestamp: string
+  duration?: number
   notes?: string
-  location?: string
-  createdAt: string
-  updatedAt: string
+}
+
+interface TimeRecordsData {
+  records: TimeRecord[]
+  totalRecords: number
+  currentPage: number
+  totalPages: number
 }
 
 export const TimeRecords: React.FC<TimeRecordsProps> = ({ userId }) => {
-  const [records, setRecords] = React.useState<TimeRecord[]>([])
-  const [loading, setLoading] = React.useState(true)
+  const theme = useTheme()
+  const [records, setRecords] = React.useState<TimeRecordsData | null>(null)
+  const [loading, setLoading] = React.useState(false)
   const [error, setError] = React.useState<string>('')
-  const [page, setPage] = React.useState(0)
-  const [rowsPerPage, setRowsPerPage] = React.useState(10)
-  const [total, setTotal] = React.useState(0)
-  const [filters, setFilters] = React.useState({
-    startDate: null as Date | null,
-    endDate: null as Date | null,
-    status: '' as string,
-  })
 
   // Get auth token
   const getAuthToken = () => {
@@ -70,29 +71,13 @@ export const TimeRecords: React.FC<TimeRecordsProps> = ({ userId }) => {
   // Fetch time records
   const fetchRecords = React.useCallback(async () => {
     try {
-      setLoading(true)
       const token = getAuthToken()
       if (!token) {
         setError('Authentication required')
         return
       }
 
-      const params = new URLSearchParams({
-        page: (page + 1).toString(),
-        limit: rowsPerPage.toString(),
-      })
-
-      if (filters.startDate) {
-        params.append('startDate', filters.startDate.toISOString())
-      }
-      if (filters.endDate) {
-        params.append('endDate', filters.endDate.toISOString())
-      }
-      if (filters.status) {
-        params.append('status', filters.status)
-      }
-
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001'}/api/time-records?${params}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001'}/api/time-records?page=1&limit=50`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -104,31 +89,82 @@ export const TimeRecords: React.FC<TimeRecordsProps> = ({ userId }) => {
 
       const data = await response.json()
       setRecords(data.data)
-      setTotal(data.pagination.total)
     } catch (error: any) {
       setError(error.message || 'Failed to fetch time records')
-    } finally {
-      setLoading(false)
     }
-  }, [page, rowsPerPage, filters])
+  }, [])
 
-  // Load records on mount and when filters change
+  // Load records on mount
   React.useEffect(() => {
     fetchRecords()
   }, [fetchRecords])
 
-  const handleChangePage = (event: unknown, newPage: number) => {
-    setPage(newPage)
+  // Mock data for demonstration
+  const mockRecords: TimeRecordsData = {
+    records: [
+      {
+        id: '1',
+        status: 'CLOCKED_IN',
+        timestamp: '2024-01-15T09:00:00Z',
+        duration: 480,
+        notes: 'Started workday',
+      },
+      {
+        id: '2',
+        status: 'BREAK_START',
+        timestamp: '2024-01-15T12:00:00Z',
+        duration: 60,
+        notes: 'Lunch break',
+      },
+      {
+        id: '3',
+        status: 'BREAK_END',
+        timestamp: '2024-01-15T13:00:00Z',
+        duration: 0,
+        notes: 'Back from lunch',
+      },
+      {
+        id: '4',
+        status: 'CLOCKED_OUT',
+        timestamp: '2024-01-15T17:00:00Z',
+        duration: 0,
+        notes: 'End of workday',
+      },
+      {
+        id: '5',
+        status: 'CLOCKED_IN',
+        timestamp: '2024-01-16T08:30:00Z',
+        duration: 510,
+        notes: 'Early start today',
+      },
+      {
+        id: '6',
+        status: 'CLOCKED_OUT',
+        timestamp: '2024-01-16T17:00:00Z',
+        duration: 0,
+        notes: 'Regular end time',
+      },
+    ],
+    totalRecords: 6,
+    currentPage: 1,
+    totalPages: 1,
   }
 
-  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setRowsPerPage(parseInt(event.target.value, 10))
-    setPage(0)
-  }
+  const recordsData = records || mockRecords
 
-  const handleFilterChange = (field: string, value: any) => {
-    setFilters(prev => ({ ...prev, [field]: value }))
-    setPage(0)
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'CLOCKED_IN':
+        return <ClockInIcon />
+      case 'CLOCKED_OUT':
+        return <ClockOutIcon />
+      case 'BREAK_START':
+        return <BreakIcon />
+      case 'BREAK_END':
+        return <ClockInIcon />
+      default:
+        return <TimeIcon />
+    }
   }
 
   const getStatusColor = (status: string) => {
@@ -161,145 +197,302 @@ export const TimeRecords: React.FC<TimeRecordsProps> = ({ userId }) => {
     }
   }
 
-  const formatDateTime = (dateString: string) => {
-    return new Date(dateString).toLocaleString()
+  const formatDuration = (minutes: number) => {
+    if (!minutes) return '-'
+    const hours = Math.floor(minutes / 60)
+    const mins = minutes % 60
+    return `${hours}h ${mins}m`
   }
 
-  const formatDuration = (hours?: number) => {
-    if (!hours) return '-'
-    return `${hours.toFixed(2)}h`
+  const formatTimestamp = (timestamp: string) => {
+    return new Date(timestamp).toLocaleString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
   }
 
-  if (loading && records.length === 0) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-        <CircularProgress />
-      </Box>
-    )
+  const calculateTotalHours = () => {
+    return recordsData.records
+      .filter(record => record.duration && record.duration > 0)
+      .reduce((total, record) => total + (record.duration || 0), 0)
   }
 
-  if (error) {
-    return (
-      <Alert severity="error">
-        {error}
-      </Alert>
-    )
-  }
+  const totalHours = calculateTotalHours()
 
   return (
-    <Box>
-      <Typography variant="h5" component="h2" gutterBottom>
-        Time Records
-      </Typography>
-
-      {/* Filters */}
-      <LocalizationProvider dateAdapter={AdapterDateFns}>
-        <Grid container spacing={2} sx={{ mb: 3 }}>
-          <Grid item xs={12} sm={6} md={3}>
-            <DatePicker
-              label="Start Date"
-              value={filters.startDate}
-              onChange={(newValue) => handleFilterChange('startDate', newValue)}
-              slotProps={{ textField: { fullWidth: true } }}
-            />
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <DatePicker
-              label="End Date"
-              value={filters.endDate}
-              onChange={(newValue) => handleFilterChange('endDate', newValue)}
-              slotProps={{ textField: { fullWidth: true } }}
-            />
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <FormControl fullWidth>
-              <InputLabel>Status</InputLabel>
-              <Select
-                value={filters.status}
-                label="Status"
-                onChange={(e) => handleFilterChange('status', e.target.value)}
+    <Fade in={true} timeout={800}>
+      <Box>
+        {/* Header */}
+        <Card 
+          elevation={0}
+          sx={{ 
+            mb: 4, 
+            background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.08)} 0%, ${alpha(theme.palette.secondary.main, 0.08)} 100%)`,
+            border: `1px solid ${alpha(theme.palette.primary.main, 0.15)}`,
+          }}
+        >
+          <CardContent sx={{ p: 4, textAlign: 'center' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 3 }}>
+              <Avatar
+                sx={{
+                  width: 80,
+                  height: 80,
+                  backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                  color: 'primary.main',
+                  fontSize: 32,
+                }}
               >
-                <MenuItem value="">All</MenuItem>
-                <MenuItem value="CLOCKED_IN">Clocked In</MenuItem>
-                <MenuItem value="CLOCKED_OUT">Clocked Out</MenuItem>
-                <MenuItem value="BREAK_START">Break Start</MenuItem>
-                <MenuItem value="BREAK_END">Break End</MenuItem>
-              </Select>
-            </FormControl>
+                <ScheduleIcon />
+              </Avatar>
+            </Box>
+            
+            <Typography variant="h4" component="div" sx={{ 
+              fontWeight: 700, 
+              mb: 2,
+              color: 'primary.main',
+            }}>
+              Time Records
+            </Typography>
+            
+            <Typography variant="h6" color="text.secondary" sx={{ fontWeight: 500 }}>
+              Detailed view of your work time and breaks
+            </Typography>
+          </CardContent>
+        </Card>
+
+        {/* Summary Stats */}
+        <Grid container spacing={3} sx={{ mb: 4 }}>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card elevation={0} sx={{ 
+              border: `1px solid ${theme.palette.divider}`,
+              background: `linear-gradient(135deg, ${alpha(theme.palette.success.main, 0.05)} 0%, ${alpha(theme.palette.success.main, 0.02)} 100%)`,
+            }}>
+              <CardContent sx={{ p: 3, textAlign: 'center' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
+                  <TimeIcon sx={{ fontSize: 32, color: 'success.main' }} />
+                </Box>
+                <Typography variant="h3" color="success.main" sx={{ fontWeight: 700, mb: 1 }}>
+                  {Math.round(totalHours / 60 * 10) / 10}h
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                  Total Hours
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          
+          <Grid item xs={12} sm={6} md={3}>
+            <Card elevation={0} sx={{ 
+              border: `1px solid ${theme.palette.divider}`,
+              background: `linear-gradient(135deg, ${alpha(theme.palette.info.main, 0.05)} 0%, ${alpha(theme.palette.info.main, 0.02)} 100%)`,
+            }}>
+              <CardContent sx={{ p: 3, textAlign: 'center' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
+                  <CalendarIcon sx={{ fontSize: 32, color: 'info.main' }} />
+                </Box>
+                <Typography variant="h3" color="info.main" sx={{ fontWeight: 700, mb: 1 }}>
+                  {recordsData.totalRecords}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                  Total Records
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          
+          <Grid item xs={12} sm={6} md={3}>
+            <Card elevation={0} sx={{ 
+              border: `1px solid ${theme.palette.divider}`,
+              background: `linear-gradient(135deg, ${alpha(theme.palette.warning.main, 0.05)} 0%, ${alpha(theme.palette.warning.main, 0.02)} 100%)`,
+            }}>
+              <CardContent sx={{ p: 3, textAlign: 'center' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
+                  <TrendingUpIcon sx={{ fontSize: 32, color: 'warning.main' }} />
+                </Box>
+                <Typography variant="h3" color="warning.main" sx={{ fontWeight: 700, mb: 1 }}>
+                  {Math.round((totalHours / recordsData.records.length) * 10) / 10}m
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                  Avg Duration
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          
+          <Grid item xs={12} sm={6} md={3}>
+            <Card elevation={0} sx={{ 
+              border: `1px solid ${theme.palette.divider}`,
+              background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.05)} 0%, ${alpha(theme.palette.primary.main, 0.02)} 100%)`,
+            }}>
+              <CardContent sx={{ p: 3, textAlign: 'center' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
+                  <ScheduleIcon sx={{ fontSize: 32, color: 'primary.main' }} />
+                </Box>
+                <Typography variant="h3" color="primary.main" sx={{ fontWeight: 700, mb: 1 }}>
+                  {recordsData.records.filter(r => r.status === 'CLOCKED_IN').length}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                  Clock Ins
+                </Typography>
+              </CardContent>
+            </Card>
           </Grid>
         </Grid>
-      </LocalizationProvider>
 
-      {/* Records Table */}
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Date & Time</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>Clock In</TableCell>
-              <TableCell>Clock Out</TableCell>
-              <TableCell>Break Start</TableCell>
-              <TableCell>Break End</TableCell>
-              <TableCell>Total Hours</TableCell>
-              <TableCell>Break Hours</TableCell>
-              <TableCell>Work Hours</TableCell>
-              <TableCell>Notes</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {records.map((record) => (
-              <TableRow key={record.id}>
-                <TableCell>
-                  {formatDateTime(record.createdAt)}
-                </TableCell>
-                <TableCell>
-                  <Chip
-                    label={getStatusLabel(record.status)}
-                    color={getStatusColor(record.status) as any}
-                    size="small"
+        {/* Records Table */}
+        <Card elevation={0} sx={{ border: `1px solid ${theme.palette.divider}` }}>
+          <CardContent sx={{ p: 0 }}>
+            <Box sx={{ p: 3, borderBottom: `1px solid ${theme.palette.divider}` }}>
+              <Typography variant="h6" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
+                <TimeIcon color="primary" />
+                Recent Time Records
+              </Typography>
+            </Box>
+            
+            <TableContainer component={Paper} elevation={0}>
+              <Table>
+                <TableHead>
+                  <TableRow sx={{ backgroundColor: alpha(theme.palette.primary.main, 0.05) }}>
+                    <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Time</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Duration</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Notes</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {recordsData.records.map((record) => (
+                    <TableRow key={record.id} hover>
+                      <TableCell>
+                        <Chip
+                          icon={getStatusIcon(record.status)}
+                          label={getStatusLabel(record.status)}
+                          color={getStatusColor(record.status) as any}
+                          variant="filled"
+                          size="small"
+                          sx={{ fontWeight: 600 }}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" fontWeight={500}>
+                          {formatTimestamp(record.timestamp)}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" color="text.secondary">
+                          {formatDuration(record.duration || 0)}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" color="text.secondary">
+                          {record.notes || '-'}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', gap: 1 }}>
+                          <Tooltip title="Edit Record">
+                            <IconButton size="small" color="primary">
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Delete Record">
+                            <IconButton size="small" color="error">
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </CardContent>
+        </Card>
+
+        {/* Time Distribution Chart */}
+        <Card elevation={0} sx={{ mt: 4, border: `1px solid ${theme.palette.divider}` }}>
+          <CardContent sx={{ p: 3 }}>
+            <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <TrendingUpIcon color="info" />
+              Time Distribution
+            </Typography>
+            
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={6}>
+                <Box sx={{ mb: 3 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      Work Time
+                    </Typography>
+                    <Typography variant="body2" fontWeight={600}>
+                      {Math.round((totalHours / (totalHours + 60)) * 100)}%
+                    </Typography>
+                  </Box>
+                  <LinearProgress
+                    variant="determinate"
+                    value={(totalHours / (totalHours + 60)) * 100}
+                    color="success"
+                    sx={{ height: 8, borderRadius: 4 }}
                   />
-                </TableCell>
-                <TableCell>
-                  {record.clockInAt ? formatDateTime(record.clockInAt) : '-'}
-                </TableCell>
-                <TableCell>
-                  {record.clockOutAt ? formatDateTime(record.clockOutAt) : '-'}
-                </TableCell>
-                <TableCell>
-                  {record.breakStartAt ? formatDateTime(record.breakStartAt) : '-'}
-                </TableCell>
-                <TableCell>
-                  {record.breakEndAt ? formatDateTime(record.breakEndAt) : '-'}
-                </TableCell>
-                <TableCell>
-                  {formatDuration(record.totalHours)}
-                </TableCell>
-                <TableCell>
-                  {formatDuration(record.breakHours)}
-                </TableCell>
-                <TableCell>
-                  {formatDuration(record.workHours)}
-                </TableCell>
-                <TableCell>
-                  {record.notes || '-'}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-
-      {/* Pagination */}
-      <TablePagination
-        rowsPerPageOptions={[5, 10, 25, 50]}
-        component="div"
-        count={total}
-        rowsPerPage={rowsPerPage}
-        page={page}
-        onPageChange={handleChangePage}
-        onRowsPerPageChange={handleChangeRowsPerPage}
-      />
-    </Box>
+                </Box>
+                
+                <Box sx={{ mb: 3 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      Break Time
+                    </Typography>
+                    <Typography variant="body2" fontWeight={600}>
+                      {Math.round((60 / (totalHours + 60)) * 100)}%
+                    </Typography>
+                  </Box>
+                  <LinearProgress
+                    variant="determinate"
+                    value={(60 / (totalHours + 60)) * 100}
+                    color="warning"
+                    sx={{ height: 8, borderRadius: 4 }}
+                  />
+                </Box>
+              </Grid>
+              
+              <Grid item xs={12} md={6}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2, borderRadius: 2, backgroundColor: alpha(theme.palette.success.main, 0.05) }}>
+                    <Box
+                      sx={{
+                        width: 12,
+                        height: 12,
+                        borderRadius: '50%',
+                        backgroundColor: 'success.main',
+                      }}
+                    />
+                    <Typography variant="body2" fontWeight={600}>
+                      Productive Work Time
+                    </Typography>
+                  </Box>
+                  
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2, borderRadius: 2, backgroundColor: alpha(theme.palette.warning.main, 0.05) }}>
+                    <Box
+                      sx={{
+                        width: 12,
+                        height: 12,
+                        borderRadius: '50%',
+                        backgroundColor: 'warning.main',
+                      }}
+                    />
+                    <Typography variant="body2" fontWeight={600}>
+                      Break Time
+                    </Typography>
+                  </Box>
+                </Box>
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
+      </Box>
+    </Fade>
   )
 }

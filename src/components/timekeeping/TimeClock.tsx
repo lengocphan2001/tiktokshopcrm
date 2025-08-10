@@ -9,12 +9,22 @@ import {
   CircularProgress,
   Chip,
   Divider,
+  Card,
+  CardContent,
+  Fade,
+  useTheme,
+  alpha,
+  Grid,
+  Avatar,
 } from '@mui/material'
 import {
   PlayArrow as ClockInIcon,
   Stop as ClockOutIcon,
   Pause as BreakIcon,
   PlayArrow as ResumeIcon,
+  AccessTime as TimeIcon,
+  TrendingUp as TrendingUpIcon,
+  Schedule as ScheduleIcon,
 } from '@mui/icons-material'
 
 interface TimeClockProps {
@@ -30,6 +40,7 @@ interface TimeStats {
 }
 
 export const TimeClock: React.FC<TimeClockProps> = ({ userId }) => {
+  const theme = useTheme()
   const [stats, setStats] = React.useState<TimeStats | null>(null)
   const [loading, setLoading] = React.useState(false)
   const [error, setError] = React.useState<string>('')
@@ -241,133 +252,264 @@ export const TimeClock: React.FC<TimeClockProps> = ({ userId }) => {
   }
 
   return (
-    <Box>
-      <Typography variant="h5" component="h2" gutterBottom>
-        Time Clock
-      </Typography>
-
-      {/* Current Time Display */}
-      <Box sx={{ textAlign: 'center', mb: 3 }}>
-        <Typography variant="h3" component="div" sx={{ fontFamily: 'monospace', mb: 1 }}>
-          {formatTime(currentTime)}
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          {formatDate(currentTime)}
-        </Typography>
-      </Box>
-
-      {/* Status Display */}
-      {stats && (
-        <Box sx={{ mb: 3 }}>
-          <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
-            <Chip
-              label={stats.isCurrentlyClockedIn ? 'Clocked In' : 'Not Clocked In'}
-              color={stats.isCurrentlyClockedIn ? 'success' : 'default'}
-              variant={stats.isCurrentlyClockedIn ? 'filled' : 'outlined'}
-            />
-            {stats.isOnBreak && (
-              <Chip
-                label="On Break"
-                color="warning"
-                variant="filled"
-              />
-            )}
-          </Box>
-          
-          {stats.lastClockIn && (
-            <Typography variant="body2" color="text.secondary">
-              Last clock in: {new Date(stats.lastClockIn).toLocaleString()}
-            </Typography>
-          )}
-        </Box>
-      )}
-
-      {/* Error Display */}
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
-
-      {/* Action Buttons */}
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        {!stats?.isCurrentlyClockedIn ? (
-          <Button
-            variant="contained"
-            color="success"
-            size="large"
-            startIcon={<ClockInIcon />}
-            onClick={handleClockIn}
-            disabled={loading}
-            fullWidth
-          >
-            {loading ? <CircularProgress size={20} /> : 'Clock In'}
-          </Button>
-        ) : (
-          <>
-            {!stats.isOnBreak ? (
-              <>
-                <Button
-                  variant="contained"
-                  color="warning"
-                  size="large"
-                  startIcon={<BreakIcon />}
-                  onClick={handleStartBreak}
-                  disabled={loading}
-                  fullWidth
-                >
-                  {loading ? <CircularProgress size={20} /> : 'Start Break'}
-                </Button>
-                
-                <Button
-                  variant="contained"
-                  color="error"
-                  size="large"
-                  startIcon={<ClockOutIcon />}
-                  onClick={handleClockOut}
-                  disabled={loading}
-                  fullWidth
-                >
-                  {loading ? <CircularProgress size={20} /> : 'Clock Out'}
-                </Button>
-              </>
-            ) : (
-              <Button
-                variant="contained"
-                color="primary"
-                size="large"
-                startIcon={<ResumeIcon />}
-                onClick={handleEndBreak}
-                disabled={loading}
-                fullWidth
+    <Fade in={true} timeout={800}>
+      <Box>
+        {/* Header Section */}
+        <Card 
+          elevation={0}
+          sx={{ 
+            mb: 4, 
+            background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.08)} 0%, ${alpha(theme.palette.secondary.main, 0.08)} 100%)`,
+            border: `1px solid ${alpha(theme.palette.primary.main, 0.15)}`,
+          }}
+        >
+          <CardContent sx={{ p: 4, textAlign: 'center' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 3 }}>
+              <Avatar
+                sx={{
+                  width: 80,
+                  height: 80,
+                  backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                  color: 'primary.main',
+                  fontSize: 32,
+                  mb: 2,
+                }}
               >
-                {loading ? <CircularProgress size={20} /> : 'End Break'}
+                <TimeIcon />
+              </Avatar>
+            </Box>
+            
+            <Typography variant="h3" component="div" sx={{ 
+              fontFamily: 'monospace', 
+              mb: 2,
+              fontWeight: 700,
+              color: 'primary.main',
+              textShadow: `0 0 20px ${alpha(theme.palette.primary.main, 0.3)}`,
+            }}>
+              {formatTime(currentTime)}
+            </Typography>
+            
+            <Typography variant="h6" color="text.secondary" sx={{ fontWeight: 500 }}>
+              {formatDate(currentTime)}
+            </Typography>
+          </CardContent>
+        </Card>
+
+        {/* Status Display */}
+        {stats && (
+          <Card elevation={0} sx={{ mb: 4, border: `1px solid ${theme.palette.divider}` }}>
+            <CardContent sx={{ p: 3 }}>
+              <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap', justifyContent: 'center' }}>
+                <Chip
+                  label={stats.isCurrentlyClockedIn ? 'Clocked In' : 'Not Clocked In'}
+                  color={stats.isCurrentlyClockedIn ? 'success' : 'default'}
+                  variant={stats.isCurrentlyClockedIn ? 'filled' : 'outlined'}
+                  icon={stats.isCurrentlyClockedIn ? <ClockInIcon /> : <ClockOutIcon />}
+                  sx={{ 
+                    fontWeight: 600,
+                    fontSize: '1rem',
+                    height: 40,
+                    '& .MuiChip-label': { px: 2 }
+                  }}
+                />
+                {stats.isOnBreak && (
+                  <Chip
+                    label="On Break"
+                    color="warning"
+                    variant="filled"
+                    icon={<BreakIcon />}
+                    sx={{ 
+                      fontWeight: 600,
+                      fontSize: '1rem',
+                      height: 40,
+                      '& .MuiChip-label': { px: 2 }
+                    }}
+                  />
+                )}
+              </Box>
+              
+              {stats.lastClockIn && (
+                <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
+                  Last clock in: {new Date(stats.lastClockIn).toLocaleString()}
+                </Typography>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Error Display */}
+        {error && (
+          <Alert 
+            severity="error" 
+            sx={{ mb: 3, borderRadius: 2 }}
+            action={
+              <Button color="inherit" size="small" onClick={() => setError('')}>
+                Dismiss
               </Button>
-            )}
-          </>
+            }
+          >
+            {error}
+          </Alert>
+        )}
+
+        {/* Action Buttons */}
+        <Card elevation={0} sx={{ mb: 4, border: `1px solid ${theme.palette.divider}` }}>
+          <CardContent sx={{ p: 3 }}>
+            <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 3, textAlign: 'center' }}>
+              Time Actions
+            </Typography>
+            
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {!stats?.isCurrentlyClockedIn ? (
+                <Button
+                  variant="contained"
+                  color="success"
+                  size="large"
+                  startIcon={<ClockInIcon />}
+                  onClick={handleClockIn}
+                  disabled={loading}
+                  fullWidth
+                  sx={{ 
+                    height: 56,
+                    fontSize: '1.1rem',
+                    fontWeight: 600,
+                    borderRadius: 2,
+                    boxShadow: theme.shadows[4],
+                    '&:hover': {
+                      boxShadow: theme.shadows[8],
+                      transform: 'translateY(-1px)',
+                    },
+                    transition: 'all 0.2s ease-in-out',
+                  }}
+                >
+                  {loading ? <CircularProgress size={24} /> : 'Clock In'}
+                </Button>
+              ) : (
+                <>
+                  {!stats.isOnBreak ? (
+                    <>
+                      <Button
+                        variant="contained"
+                        color="warning"
+                        size="large"
+                        startIcon={<BreakIcon />}
+                        onClick={handleStartBreak}
+                        disabled={loading}
+                        fullWidth
+                        sx={{ 
+                          height: 56,
+                          fontSize: '1.1rem',
+                          fontWeight: 600,
+                          borderRadius: 2,
+                          boxShadow: theme.shadows[4],
+                          '&:hover': {
+                            boxShadow: theme.shadows[8],
+                            transform: 'translateY(-1px)',
+                          },
+                          transition: 'all 0.2s ease-in-out',
+                        }}
+                      >
+                        {loading ? <CircularProgress size={24} /> : 'Start Break'}
+                      </Button>
+                      
+                      <Button
+                        variant="contained"
+                        color="error"
+                        size="large"
+                        startIcon={<ClockOutIcon />}
+                        onClick={handleClockOut}
+                        disabled={loading}
+                        fullWidth
+                        sx={{ 
+                          height: 56,
+                          fontSize: '1.1rem',
+                          fontWeight: 600,
+                          borderRadius: 2,
+                          boxShadow: theme.shadows[4],
+                          '&:hover': {
+                            boxShadow: theme.shadows[8],
+                            transform: 'translateY(-1px)',
+                          },
+                          transition: 'all 0.2s ease-in-out',
+                        }}
+                      >
+                        {loading ? <CircularProgress size={24} /> : 'Clock Out'}
+                      </Button>
+                    </>
+                  ) : (
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      size="large"
+                      startIcon={<ResumeIcon />}
+                      onClick={handleEndBreak}
+                      disabled={loading}
+                      fullWidth
+                      sx={{ 
+                        height: 56,
+                        fontSize: '1.1rem',
+                        fontWeight: 600,
+                        borderRadius: 2,
+                        boxShadow: theme.shadows[4],
+                        '&:hover': {
+                          boxShadow: theme.shadows[8],
+                          transform: 'translateY(-1px)',
+                        },
+                        transition: 'all 0.2s ease-in-out',
+                      }}
+                    >
+                      {loading ? <CircularProgress size={24} /> : 'End Break'}
+                    </Button>
+                  )}
+                </>
+              )}
+            </Box>
+          </CardContent>
+        </Card>
+
+        {/* Quick Stats */}
+        {stats && (
+          <Grid container spacing={3}>
+            <Grid item xs={12} sm={6}>
+              <Card elevation={0} sx={{ 
+                border: `1px solid ${theme.palette.divider}`,
+                background: `linear-gradient(135deg, ${alpha(theme.palette.success.main, 0.05)} 0%, ${alpha(theme.palette.info.main, 0.05)} 100%)`,
+              }}>
+                <CardContent sx={{ p: 3, textAlign: 'center' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
+                    <TrendingUpIcon sx={{ fontSize: 32, color: 'success.main', mr: 1 }} />
+                  </Box>
+                  <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, color: 'text.secondary' }}>
+                    This Week
+                  </Typography>
+                  <Typography variant="h3" color="success.main" sx={{ fontWeight: 700 }}>
+                    {stats.currentWeekHours.toFixed(1)}h
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            
+            <Grid item xs={12} sm={6}>
+              <Card elevation={0} sx={{ 
+                border: `1px solid ${theme.palette.divider}`,
+                background: `linear-gradient(135deg, ${alpha(theme.palette.info.main, 0.05)} 0%, ${alpha(theme.palette.primary.main, 0.05)} 100%)`,
+              }}>
+                <CardContent sx={{ p: 3, textAlign: 'center' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
+                    <ScheduleIcon sx={{ fontSize: 32, color: 'info.main', mr: 1 }} />
+                  </Box>
+                  <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, color: 'text.secondary' }}>
+                    This Month
+                  </Typography>
+                  <Typography variant="h3" color="info.main" sx={{ fontWeight: 700 }}>
+                    {stats.currentMonthHours.toFixed(1)}h
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
         )}
       </Box>
-
-      <Divider sx={{ my: 3 }} />
-
-      {/* Quick Stats */}
-      {stats && (
-        <Box>
-          <Typography variant="h6" gutterBottom>
-            This Week
-          </Typography>
-          <Typography variant="h4" color="primary">
-            {stats.currentWeekHours.toFixed(1)}h
-          </Typography>
-          
-          <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
-            This Month
-          </Typography>
-          <Typography variant="h4" color="primary">
-            {stats.currentMonthHours.toFixed(1)}h
-          </Typography>
-        </Box>
-      )}
-    </Box>
+    </Fade>
   )
 }

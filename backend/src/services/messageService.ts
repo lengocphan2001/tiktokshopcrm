@@ -1,10 +1,11 @@
 import { PrismaClient, MessageType, MessageStatus } from '@prisma/client'
+import { prisma } from '../config/database'
 
 export class MessageService {
   private prisma: PrismaClient
 
   constructor() {
-    this.prisma = new PrismaClient()
+    this.prisma = prisma
   }
 
   async sendMessage(data: {

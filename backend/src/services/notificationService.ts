@@ -1,10 +1,11 @@
 import { PrismaClient, NotificationStatus } from '@prisma/client'
+import { prisma } from '../config/database'
 
 export class NotificationService {
   private prisma: PrismaClient
 
   constructor() {
-    this.prisma = new PrismaClient()
+    this.prisma = prisma
   }
 
   async createNotification(data: {

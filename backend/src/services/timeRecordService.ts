@@ -1,8 +1,7 @@
 import { PrismaClient } from '@prisma/client'
 import { TimeRecord, CreateTimeRecordRequest, UpdateTimeRecordRequest, TimeRecordStats, PaginatedTimeRecordsResponse } from '../types/timeRecord'
 import { CreateTimeRecordInput, UpdateTimeRecordInput, TimeRecordPaginationInput } from '../utils/validation'
-
-const prisma = new PrismaClient()
+import { prisma } from '../config/database'
 
 export class TimeRecordService {
   async createTimeRecord(data: CreateTimeRecordInput, userId: string): Promise<TimeRecord> {

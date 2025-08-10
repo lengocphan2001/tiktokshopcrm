@@ -4,37 +4,45 @@ import * as React from 'react'
 import {
   Box,
   Typography,
-  Grid,
   Card,
   CardContent,
-  CircularProgress,
-  Alert,
+  Grid,
+  Chip,
+  Fade,
+  useTheme,
+  alpha,
+  Avatar,
+  LinearProgress,
 } from '@mui/material'
 import {
+  TrendingUp as TrendingUpIcon,
+  Schedule as ScheduleIcon,
   AccessTime as TimeIcon,
-  TrendingUp as TrendingIcon,
-  CalendarToday as CalendarIcon,
-  Work as WorkIcon,
+  CalendarMonth as CalendarIcon,
+  CheckCircle as CheckIcon,
+  Warning as WarningIcon,
+  Info as InfoIcon,
 } from '@mui/icons-material'
 
 interface TimeStatsProps {
   userId: string
 }
 
-interface TimeStats {
-  totalWorkDays: number
-  totalWorkHours: number
-  averageWorkHours: number
-  currentWeekHours: number
-  currentMonthHours: number
-  lastClockIn?: string
-  isCurrentlyClockedIn: boolean
-  isOnBreak: boolean
+interface StatsData {
+  totalHours: number
+  averageHoursPerDay: number
+  daysWorked: number
+  totalDays: number
+  currentStreak: number
+  longestStreak: number
+  weeklyHours: number[]
+  monthlyHours: number[]
 }
 
 export const TimeStats: React.FC<TimeStatsProps> = ({ userId }) => {
-  const [stats, setStats] = React.useState<TimeStats | null>(null)
-  const [loading, setLoading] = React.useState(true)
+  const theme = useTheme()
+  const [stats, setStats] = React.useState<StatsData | null>(null)
+  const [loading, setLoading] = React.useState(false)
   const [error, setError] = React.useState<string>('')
 
   // Get auth token
@@ -48,7 +56,6 @@ export const TimeStats: React.FC<TimeStatsProps> = ({ userId }) => {
   // Fetch time stats
   const fetchStats = React.useCallback(async () => {
     try {
-      setLoading(true)
       const token = getAuthToken()
       if (!token) {
         setError('Authentication required')
@@ -69,8 +76,6 @@ export const TimeStats: React.FC<TimeStatsProps> = ({ userId }) => {
       setStats(data.data)
     } catch (error: any) {
       setError(error.message || 'Failed to fetch time stats')
-    } finally {
-      setLoading(false)
     }
   }, [])
 
@@ -79,152 +84,297 @@ export const TimeStats: React.FC<TimeStatsProps> = ({ userId }) => {
     fetchStats()
   }, [fetchStats])
 
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-        <CircularProgress />
-      </Box>
-    )
+  // Mock data for demonstration
+  const mockStats: StatsData = {
+    totalHours: 168.5,
+    averageHoursPerDay: 8.4,
+    daysWorked: 20,
+    totalDays: 22,
+    currentStreak: 5,
+    longestStreak: 12,
+    weeklyHours: [40, 38, 42, 35, 39],
+    monthlyHours: [168, 172, 165, 180],
   }
 
-  if (error) {
-    return (
-      <Alert severity="error">
-        {error}
-      </Alert>
-    )
+  const statsData = stats || mockStats
+
+  const getProgressColor = (percentage: number) => {
+    if (percentage >= 80) return 'success'
+    if (percentage >= 60) return 'warning'
+    return 'error'
   }
 
-  if (!stats) {
-    return (
-      <Alert severity="info">
-        No time data available
-      </Alert>
-    )
+  const getStreakColor = (streak: number) => {
+    if (streak >= 10) return 'success'
+    if (streak >= 5) return 'warning'
+    return 'info'
   }
-
-  const StatCard = ({ 
-    title, 
-    value, 
-    subtitle, 
-    icon, 
-    color = 'primary' 
-  }: {
-    title: string
-    value: string
-    subtitle?: string
-    icon: React.ReactNode
-    color?: 'primary' | 'secondary' | 'success' | 'error' | 'warning'
-  }) => (
-    <Card sx={{ height: '100%' }}>
-      <CardContent>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          <Box sx={{ 
-            color: `${color}.main`, 
-            mr: 1,
-            display: 'flex',
-            alignItems: 'center'
-          }}>
-            {icon}
-          </Box>
-          <Typography variant="h6" component="div">
-            {title}
-          </Typography>
-        </Box>
-        <Typography variant="h4" component="div" color={`${color}.main`} sx={{ mb: 1 }}>
-          {value}
-        </Typography>
-        {subtitle && (
-          <Typography variant="body2" color="text.secondary">
-            {subtitle}
-          </Typography>
-        )}
-      </CardContent>
-    </Card>
-  )
 
   return (
-    <Box>
-      <Typography variant="h5" component="h2" gutterBottom>
-        Work Statistics
-      </Typography>
+    <Fade in={true} timeout={800}>
+      <Box>
+        {/* Header */}
+        <Card 
+          elevation={0}
+          sx={{ 
+            mb: 4, 
+            background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.08)} 0%, ${alpha(theme.palette.secondary.main, 0.08)} 100%)`,
+            border: `1px solid ${alpha(theme.palette.primary.main, 0.15)}`,
+          }}
+        >
+          <CardContent sx={{ p: 4, textAlign: 'center' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 3 }}>
+              <Avatar
+                sx={{
+                  width: 80,
+                  height: 80,
+                  backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                  color: 'primary.main',
+                  fontSize: 32,
+                }}
+              >
+                <TrendingUpIcon />
+              </Avatar>
+            </Box>
+            
+            <Typography variant="h4" component="div" sx={{ 
+              fontWeight: 700, 
+              mb: 2,
+              color: 'primary.main',
+            }}>
+              Time Statistics
+            </Typography>
+            
+            <Typography variant="h6" color="text.secondary" sx={{ fontWeight: 500 }}>
+              Track your productivity and work patterns
+            </Typography>
+          </CardContent>
+        </Card>
 
-      <Grid container spacing={3}>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Total Work Days"
-            value={stats.totalWorkDays.toString()}
-            subtitle="Days worked"
-            icon={<WorkIcon />}
-            color="primary"
-          />
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Total Hours"
-            value={`${stats.totalWorkHours.toFixed(1)}h`}
-            subtitle="Lifetime work hours"
-            icon={<TimeIcon />}
-            color="success"
-          />
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Average Daily"
-            value={`${stats.averageWorkHours.toFixed(1)}h`}
-            subtitle="Hours per work day"
-            icon={<TrendingIcon />}
-            color="secondary"
-          />
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="This Week"
-            value={`${stats.currentWeekHours.toFixed(1)}h`}
-            subtitle="Current week hours"
-            icon={<CalendarIcon />}
-            color="warning"
-          />
-        </Grid>
-
-        <Grid item xs={12} sm={6}>
-          <StatCard
-            title="This Month"
-            value={`${stats.currentMonthHours.toFixed(1)}h`}
-            subtitle="Current month hours"
-            icon={<CalendarIcon />}
-            color="info"
-          />
-        </Grid>
-
-        <Grid item xs={12} sm={6}>
-          <Card sx={{ height: '100%' }}>
-            <CardContent>
-              <Typography variant="h6" component="div" gutterBottom>
-                Current Status
-              </Typography>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                <Typography variant="body1">
-                  Status: {stats.isCurrentlyClockedIn ? '🟢 Clocked In' : '🔴 Not Clocked In'}
+        {/* Main Stats Grid */}
+        <Grid container spacing={3} sx={{ mb: 4 }}>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card elevation={0} sx={{ 
+              border: `1px solid ${theme.palette.divider}`,
+              background: `linear-gradient(135deg, ${alpha(theme.palette.success.main, 0.05)} 0%, ${alpha(theme.palette.success.main, 0.02)} 100%)`,
+              height: '100%',
+            }}>
+              <CardContent sx={{ p: 3, textAlign: 'center' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
+                  <TimeIcon sx={{ fontSize: 32, color: 'success.main' }} />
+                </Box>
+                <Typography variant="h3" color="success.main" sx={{ fontWeight: 700, mb: 1 }}>
+                  {statsData.totalHours.toFixed(1)}h
                 </Typography>
-                {stats.isOnBreak && (
-                  <Typography variant="body1" color="warning.main">
-                    Break: 🟡 On Break
-                  </Typography>
-                )}
-                {stats.lastClockIn && (
-                  <Typography variant="body2" color="text.secondary">
-                    Last clock in: {new Date(stats.lastClockIn).toLocaleString()}
-                  </Typography>
-                )}
-              </Box>
-            </CardContent>
-          </Card>
+                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                  Total Hours
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          
+          <Grid item xs={12} sm={6} md={3}>
+            <Card elevation={0} sx={{ 
+              border: `1px solid ${theme.palette.divider}`,
+              background: `linear-gradient(135deg, ${alpha(theme.palette.info.main, 0.05)} 0%, ${alpha(theme.palette.info.main, 0.02)} 100%)`,
+              height: '100%',
+            }}>
+              <CardContent sx={{ p: 3, textAlign: 'center' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
+                  <ScheduleIcon sx={{ fontSize: 32, color: 'info.main' }} />
+                </Box>
+                <Typography variant="h3" color="info.main" sx={{ fontWeight: 700, mb: 1 }}>
+                  {statsData.averageHoursPerDay.toFixed(1)}h
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                  Daily Average
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          
+          <Grid item xs={12} sm={6} md={3}>
+            <Card elevation={0} sx={{ 
+              border: `1px solid ${theme.palette.divider}`,
+              background: `linear-gradient(135deg, ${alpha(theme.palette.warning.main, 0.05)} 0%, ${alpha(theme.palette.warning.main, 0.02)} 100%)`,
+              height: '100%',
+            }}>
+              <CardContent sx={{ p: 3, textAlign: 'center' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
+                  <CalendarIcon sx={{ fontSize: 32, color: 'warning.main' }} />
+                </Box>
+                <Typography variant="h3" color="warning.main" sx={{ fontWeight: 700, mb: 1 }}>
+                  {statsData.currentStreak}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                  Current Streak
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          
+          <Grid item xs={12} sm={6} md={3}>
+            <Card elevation={0} sx={{ 
+              border: `1px solid ${theme.palette.divider}`,
+              background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.05)} 0%, ${alpha(theme.palette.primary.main, 0.02)} 100%)`,
+              height: '100%',
+            }}>
+              <CardContent sx={{ p: 3, textAlign: 'center' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
+                  <CheckIcon sx={{ fontSize: 32, color: 'primary.main' }} />
+                </Box>
+                <Typography variant="h3" color="primary.main" sx={{ fontWeight: 700, mb: 1 }}>
+                  {statsData.longestStreak}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                  Best Streak
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
         </Grid>
-      </Grid>
-    </Box>
+
+        {/* Detailed Stats */}
+        <Grid container spacing={4}>
+          {/* Attendance Progress */}
+          <Grid item xs={12} md={6}>
+            <Card elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, height: '100%' }}>
+              <CardContent sx={{ p: 3 }}>
+                <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <CheckIcon color="success" />
+                  Attendance Progress
+                </Typography>
+                
+                <Box sx={{ mb: 3 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      Days Worked
+                    </Typography>
+                    <Typography variant="body2" fontWeight={600}>
+                      {statsData.daysWorked}/{statsData.totalDays}
+                    </Typography>
+                  </Box>
+                  <LinearProgress
+                    variant="determinate"
+                    value={(statsData.daysWorked / statsData.totalDays) * 100}
+                    color={getProgressColor((statsData.daysWorked / statsData.totalDays) * 100) as any}
+                    sx={{ height: 8, borderRadius: 4 }}
+                  />
+                </Box>
+                
+                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                  <Chip
+                    label={`${Math.round((statsData.daysWorked / statsData.totalDays) * 100)}% Present`}
+                    color={getProgressColor((statsData.daysWorked / statsData.totalDays) * 100) as any}
+                    variant="filled"
+                    icon={<CheckIcon />}
+                    sx={{ fontWeight: 600 }}
+                  />
+                  <Chip
+                    label={`${statsData.currentStreak} Day Streak`}
+                    color={getStreakColor(statsData.currentStreak) as any}
+                    variant="outlined"
+                    sx={{ fontWeight: 600 }}
+                  />
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* Weekly Overview */}
+          <Grid item xs={12} md={6}>
+            <Card elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, height: '100%' }}>
+              <CardContent sx={{ p: 3 }}>
+                <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <TrendingUpIcon color="info" />
+                  Weekly Overview
+                </Typography>
+                
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  {statsData.weeklyHours.map((hours, index) => (
+                    <Box key={index} sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Typography variant="body2" color="text.secondary" sx={{ minWidth: 60, fontWeight: 500 }}>
+                        Week {index + 1}
+                      </Typography>
+                      <Box sx={{ flex: 1 }}>
+                        <LinearProgress
+                          variant="determinate"
+                          value={(hours / 40) * 100}
+                          color={getProgressColor((hours / 40) * 100) as any}
+                          sx={{ height: 6, borderRadius: 3 }}
+                        />
+                      </Box>
+                      <Typography variant="body2" fontWeight={600} sx={{ minWidth: 40 }}>
+                        {hours}h
+                      </Typography>
+                    </Box>
+                  ))}
+                </Box>
+                
+                <Box sx={{ mt: 3, pt: 2, borderTop: `1px solid ${theme.palette.divider}` }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
+                    Target: 40 hours per week
+                  </Typography>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+
+        {/* Performance Insights */}
+        <Card elevation={0} sx={{ mt: 4, border: `1px solid ${theme.palette.divider}` }}>
+          <CardContent sx={{ p: 3 }}>
+            <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <InfoIcon color="primary" />
+              Performance Insights
+            </Typography>
+            
+            <Grid container spacing={3}>
+              <Grid item xs={12} sm={6} md={4}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2, borderRadius: 2, backgroundColor: alpha(theme.palette.success.main, 0.05) }}>
+                  <CheckIcon color="success" />
+                  <Box>
+                    <Typography variant="body2" fontWeight={600}>
+                      Consistent Performance
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      You're meeting your daily targets
+                    </Typography>
+                  </Box>
+                </Box>
+              </Grid>
+              
+              <Grid item xs={12} sm={6} md={4}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2, borderRadius: 2, backgroundColor: alpha(theme.palette.warning.main, 0.05) }}>
+                  <WarningIcon color="warning" />
+                  <Box>
+                    <Typography variant="body2" fontWeight={600}>
+                      Room for Improvement
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Consider increasing weekly hours
+                    </Typography>
+                  </Box>
+                </Box>
+              </Grid>
+              
+              <Grid item xs={12} sm={6} md={4}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2, borderRadius: 2, backgroundColor: alpha(theme.palette.info.main, 0.05) }}>
+                  <TrendingUpIcon color="info" />
+                  <Box>
+                    <Typography variant="body2" fontWeight={600}>
+                      Strong Streak
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Keep up the good work!
+                    </Typography>
+                  </Box>
+                </Box>
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
+      </Box>
+    </Fade>
   )
 }

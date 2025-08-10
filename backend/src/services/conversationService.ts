@@ -1,10 +1,11 @@
 import { PrismaClient } from '@prisma/client'
+import { prisma } from '../config/database'
 
 export class ConversationService {
   private prisma: PrismaClient
 
   constructor() {
-    this.prisma = new PrismaClient()
+    this.prisma = prisma
   }
 
   async createDirectConversation(userId1: string, userId2: string) {

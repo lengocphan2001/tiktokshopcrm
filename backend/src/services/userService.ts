@@ -2,8 +2,7 @@ import { PrismaClient } from '@prisma/client'
 import { User, CreateUserRequest, UpdateUserRequest, PaginatedUsersResponse } from '../types/user'
 import { CreateUserInput, UpdateUserInput, PaginationInput } from '../utils/validation'
 import bcrypt from 'bcryptjs'
-
-const prisma = new PrismaClient()
+import { prisma } from '../config/database'
 
 export class UserService {
   async createUser(data: CreateUserInput, createdBy: string): Promise<User> {

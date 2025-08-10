@@ -62,7 +62,7 @@ interface WebSocketContextType {
   markNotificationAsRead: (notificationId: string) => Promise<void>
   markAllNotificationsAsRead: () => Promise<void>
   clearNotifications: () => void
-  fetchNotifications: () => Promise<void>
+  fetchNotifications: (force?: boolean) => Promise<void>
   // Messaging functions
   joinConversation: (conversationId: string) => void
   leaveConversation: (conversationId: string) => void
@@ -91,6 +91,11 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
   // WebSocket connection
   const wsRef = React.useRef<WebSocket | null>(null)
   const reconnectTimeoutRef = React.useRef<NodeJS.Timeout | null>(null)
+  
+  // Cache and debounce for notifications
+  const lastFetchTimeRef = React.useRef<number>(0)
+  const isFetchingRef = React.useRef<boolean>(false)
+  const fetchTimeoutRef = React.useRef<NodeJS.Timeout | null>(null)
 
   // Function to get auth token from localStorage
   const getAuthToken = () => {
@@ -100,35 +105,66 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
     return null
   }
 
-  // Function to fetch notifications from database
-  const fetchNotifications = React.useCallback(async () => {
+  // Function to fetch notifications from database with caching and debouncing
+  const fetchNotifications = React.useCallback(async (force = false) => {
     if (!userId) return
 
-    try {
-      const token = getAuthToken()
-      if (!token) {
-        return
-      }
+    const now = Date.now()
+    const CACHE_DURATION = 30000 // 30 seconds cache
+    const DEBOUNCE_DELAY = 1000 // 1 second debounce
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001'}/api/notifications`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        setNotifications(data.data || [])
-        
-        // Calculate unread count
-        const unreadNotifications = data.data?.filter((n: Notification) => n.status === 'UNREAD') || []
-        setUnreadCount(unreadNotifications.length)
-      }
-    } catch (error) {
-      console.error('Error fetching notifications:', error)
+    // Check if we're already fetching
+    if (isFetchingRef.current && !force) {
+      return
     }
+
+    // Check cache duration
+    if (!force && now - lastFetchTimeRef.current < CACHE_DURATION) {
+      console.log('Using cached notifications, last fetch was', now - lastFetchTimeRef.current, 'ms ago')
+      return
+    }
+
+    // Clear existing timeout
+    if (fetchTimeoutRef.current) {
+      clearTimeout(fetchTimeoutRef.current)
+    }
+
+    // Debounce the fetch
+    fetchTimeoutRef.current = setTimeout(async () => {
+      try {
+        isFetchingRef.current = true
+        const token = getAuthToken()
+        if (!token) {
+          return
+        }
+
+        console.log('Fetching notifications from API...')
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001'}/api/notifications`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          setNotifications(data.data || [])
+          
+          // Calculate unread count
+          const unreadNotifications = data.data?.filter((n: Notification) => n.status === 'UNREAD') || []
+          setUnreadCount(unreadNotifications.length)
+          
+          // Update last fetch time
+          lastFetchTimeRef.current = Date.now()
+          console.log('Notifications fetched successfully')
+        }
+      } catch (error) {
+        console.error('Error fetching notifications:', error)
+      } finally {
+        isFetchingRef.current = false
+      }
+    }, force ? 0 : DEBOUNCE_DELAY)
   }, [userId])
 
   // Function to mark notification as read
@@ -137,6 +173,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
       // Check if notification is already read
       const notification = notifications.find(n => n.id === notificationId)
       if (notification && notification.status === 'READ') {
+        console.log('Notification already read, skipping API call')
         return
       }
       
@@ -145,6 +182,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
         return
       }
 
+      console.log('Marking notification as read:', notificationId)
       const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001'}/api/notifications/${notificationId}/read`, {
         method: 'PUT',
         headers: {
@@ -174,11 +212,19 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
   // Function to mark all notifications as read
   const markAllNotificationsAsRead = React.useCallback(async () => {
     try {
+      // Check if all notifications are already read
+      const unreadNotifications = notifications.filter(n => n.status === 'UNREAD')
+      if (unreadNotifications.length === 0) {
+        console.log('All notifications already read, skipping API call')
+        return
+      }
+
       const token = getAuthToken()
       if (!token) {
         return
       }
 
+      console.log('Marking all notifications as read')
       const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001'}/api/notifications/mark-all-read`, {
         method: 'PUT',
         headers: {
@@ -196,7 +242,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
     } catch (error) {
       console.error('Error marking all notifications as read:', error)
     }
-  }, [])
+  }, [notifications])
 
   const clearNotifications = () => {
     setNotifications([])
@@ -310,8 +356,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
           userId
         }))
         
-        // Fetch existing notifications
-        fetchNotifications()
+        // Fetch existing notifications only if not recently fetched
+        fetchNotifications(false)
       }
 
       ws.onmessage = (event) => {
@@ -406,6 +452,9 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
       }
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current)
+      }
+      if (fetchTimeoutRef.current) {
+        clearTimeout(fetchTimeoutRef.current)
       }
     }
   }, [userId, initializeWebSocket])

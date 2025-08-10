@@ -1,8 +1,7 @@
 import jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
 import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import { prisma } from '../config/database'
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
 
 export const hashPassword = async (password: string): Promise<string> => {

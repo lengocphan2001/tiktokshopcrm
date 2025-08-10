@@ -45,7 +45,7 @@ interface Message {
   id: string
   content: string
   type: 'TEXT' | 'SYSTEM' | 'NOTIFICATION'
-  status: 'SENT' | 'DELIVERED' | 'READ'
+  status: 'SENT' | 'DELIVERED' | 'READ' | 'SENDING'
   senderId: string
   createdAt: Date
   sender: {
