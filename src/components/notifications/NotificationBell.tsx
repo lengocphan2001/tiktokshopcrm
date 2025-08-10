@@ -12,11 +12,18 @@ import {
   Box,
   Button,
   Divider,
-  Chip,
   Tooltip,
   ListItemButton,
+  Avatar,
 } from '@mui/material'
-import { Notifications as NotificationsIcon } from '@mui/icons-material'
+import {
+  Notifications as NotificationsIcon,
+  Assignment as AssignmentIcon,
+  Edit as EditIcon,
+  Autorenew as AutorenewIcon,
+  CheckCircle as CheckCircleIcon,
+  Person as PersonIcon,
+} from '@mui/icons-material'
 import { useWebSocket } from '../../contexts/WebSocketContext'
 import { formatDistanceToNow } from 'date-fns'
 
@@ -48,21 +55,38 @@ const getNotificationColor = (type: string) => {
   }
 }
 
-const getNotificationIcon = (type: string) => {
+const NotificationTypeIcon: React.FC<{ type: string }> = ({ type }) => {
+  let IconComp = NotificationsIcon
+  let color: string = 'primary.main'
+
   switch (type) {
     case 'TASK_CREATED':
-      return '📋'
+      IconComp = AssignmentIcon
+      color = 'info.main'
+      break
     case 'TASK_UPDATED':
-      return '✏️'
+      IconComp = EditIcon
+      color = 'info.main'
+      break
     case 'TASK_STATUS_CHANGED':
-      return '🔄'
+      IconComp = AutorenewIcon
+      color = 'warning.main'
+      break
     case 'TASK_RESULT_UPDATED':
-      return '✅'
+      IconComp = CheckCircleIcon
+      color = 'success.main'
+      break
     case 'TASK_ASSIGNED':
-      return '👤'
-    default:
-      return '📢'
+      IconComp = PersonIcon
+      color = 'secondary.main'
+      break
   }
+
+  return (
+    <Avatar sx={{ bgcolor: color, width: 28, height: 28 }}>
+      <IconComp sx={{ fontSize: 18, color: 'common.white' }} />
+    </Avatar>
+  )
 }
 
 export const NotificationBell: React.FC = () => {
@@ -151,14 +175,7 @@ export const NotificationBell: React.FC = () => {
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
             <Typography variant="h6">Notifications</Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              {!isConnected && (
-                <Chip 
-                  label="Disconnected" 
-                  size="small" 
-                  color="error" 
-                  variant="outlined"
-                />
-              )}
+              {/* Removed status Chip for cleaner UI */}
               {unreadCount > 0 && (
                 <Button size="small" onClick={handleMarkAllRead}>
                   Mark all read
@@ -191,9 +208,9 @@ export const NotificationBell: React.FC = () => {
                   >
                     <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                        <Typography variant="body2" sx={{ mr: 1 }}>
-                          {getNotificationIcon(notification.type)}
-                        </Typography>
+                        <Box sx={{ mr: 1 }}>
+                          <NotificationTypeIcon type={notification.type} />
+                        </Box>
                         <Typography 
                           variant="subtitle2" 
                           sx={{ 
@@ -204,15 +221,7 @@ export const NotificationBell: React.FC = () => {
                         >
                           {notification.title}
                         </Typography>
-                        <Chip
-                          label={notification.type.replace('_', ' ')}
-                          size="small"
-                          color={getNotificationColor(notification.type) as any}
-                          sx={{ 
-                            fontSize: '0.7rem',
-                            opacity: notification.status === 'READ' ? 0.6 : 1,
-                          }}
-                        />
+                        {/* Removed per-item Chip */}
                       </Box>
                       
                       <Typography 

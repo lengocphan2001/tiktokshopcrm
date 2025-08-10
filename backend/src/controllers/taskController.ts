@@ -17,12 +17,7 @@ export class TaskController {
 
       const task = await this.taskService.createTask(data, createdById)
 
-      // Send notification to the assignee (this won't break if WebSocket is not available)
-      try {
-        await globalNotificationHelper.sendTaskCreatedNotification(task, req.user!)
-      } catch (notificationError) {
-        console.error('Notification error (non-blocking):', notificationError)
-      }
+      // No notification on create (only notify on status changes)
 
       res.status(201).json({
         success: true,
@@ -63,12 +58,7 @@ export class TaskController {
 
       const task = await this.taskService.updateTask(id, data, updatedById)
 
-      // Send notification about the update
-      try {
-        await globalNotificationHelper.sendTaskUpdatedNotification(task, req.user!, previousTask)
-      } catch (notificationError) {
-        console.error('Notification error (non-blocking):', notificationError)
-      }
+      // No notification on general update (only notify on status changes)
 
       res.json({
         success: true,
@@ -248,12 +238,7 @@ export class TaskController {
 
       const task = await this.taskService.updateTaskResult(id, result, updatedById)
 
-      // Send notification about the result update
-      try {
-        await globalNotificationHelper.sendTaskResultUpdatedNotification(task, req.user!)
-      } catch (notificationError) {
-        console.error('Notification error (non-blocking):', notificationError)
-      }
+      // No notification on result update (only notify on status changes)
 
       res.json({
         success: true,

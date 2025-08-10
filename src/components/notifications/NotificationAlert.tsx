@@ -7,8 +7,16 @@ import {
   AlertTitle,
   Box,
   Typography,
-  Chip,
+  Avatar,
 } from '@mui/material'
+import {
+  Assignment as AssignmentIcon,
+  Edit as EditIcon,
+  Autorenew as AutorenewIcon,
+  CheckCircle as CheckCircleIcon,
+  Person as PersonIcon,
+  Notifications as NotificationsIcon,
+} from '@mui/icons-material'
 import { useWebSocket } from '../../contexts/WebSocketContext'
 
 interface Notification {
@@ -38,21 +46,38 @@ const getNotificationSeverity = (type: string) => {
   }
 }
 
-const getNotificationIcon = (type: string) => {
+const NotificationTypeIcon: React.FC<{ type: string }> = ({ type }) => {
+  let IconComp = NotificationsIcon
+  let color: string = 'primary.main'
+
   switch (type) {
     case 'TASK_CREATED':
-      return '📋'
+      IconComp = AssignmentIcon
+      color = 'info.main'
+      break
     case 'TASK_UPDATED':
-      return '✏️'
+      IconComp = EditIcon
+      color = 'info.main'
+      break
     case 'TASK_STATUS_CHANGED':
-      return '🔄'
+      IconComp = AutorenewIcon
+      color = 'warning.main'
+      break
     case 'TASK_RESULT_UPDATED':
-      return '✅'
+      IconComp = CheckCircleIcon
+      color = 'success.main'
+      break
     case 'TASK_ASSIGNED':
-      return '👤'
-    default:
-      return '📢'
+      IconComp = PersonIcon
+      color = 'secondary.main'
+      break
   }
+
+  return (
+    <Avatar sx={{ bgcolor: color, width: 28, height: 28 }}>
+      <IconComp sx={{ fontSize: 18, color: 'common.white' }} />
+    </Avatar>
+  )
 }
 
 // Create audio context for notification sounds
@@ -152,9 +177,7 @@ export const NotificationAlert: React.FC = () => {
         onClick={handleNotificationClick}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Typography variant="body2">
-            {getNotificationIcon(currentNotification.type)}
-          </Typography>
+          <NotificationTypeIcon type={currentNotification.type} />
           <Box sx={{ flexGrow: 1 }}>
             <AlertTitle sx={{ fontSize: '0.9rem', mb: 0.5 }}>
               {currentNotification.title}
@@ -163,17 +186,7 @@ export const NotificationAlert: React.FC = () => {
               {currentNotification.message}
             </Typography>
           </Box>
-          <Chip
-            label={currentNotification.type.replace('_', ' ')}
-            size="small"
-            sx={{ 
-              fontSize: '0.6rem',
-              height: '20px',
-              '& .MuiChip-label': {
-                px: 1,
-              },
-            }}
-          />
+          {/* Chip removed for cleaner look */}
         </Box>
       </Alert>
     </Snackbar>
