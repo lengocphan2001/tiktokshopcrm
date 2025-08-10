@@ -19,7 +19,6 @@ import {
 } from '@mui/material'
 import { Send as SendIcon, MoreVert as MoreVertIcon, ArrowBack as ArrowBackIcon } from '@mui/icons-material'
 import { formatDistanceToNow } from 'date-fns'
-import { motion, AnimatePresence } from 'framer-motion'
 
 interface Message {
   id: string
@@ -59,6 +58,8 @@ interface ChatWindowProps {
   onSendMessage: (content: string) => void
   onLoadMoreMessages?: () => void
   onBackToConversations?: () => void
+  hasMoreMessages?: boolean
+  loadingMore?: boolean
 }
 
 export const ChatWindow: React.FC<ChatWindowProps> = ({
@@ -69,25 +70,105 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   onSendMessage,
   onLoadMoreMessages,
   onBackToConversations,
+  hasMoreMessages = true,
+  loadingMore = false,
 }) => {
   const [newMessage, setNewMessage] = React.useState('')
   const messagesEndRef = React.useRef<HTMLDivElement>(null)
+  const messagesContainerRef = React.useRef<HTMLDivElement>(null)
   const [isTyping, setIsTyping] = React.useState(false)
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
+  
+  // ROBUST SCROLL MANAGEMENT
+  const prevMessageCountRef = React.useRef(0)
+  const scrollPositionRef = React.useRef(0)
+  const userSentMessageRef = React.useRef(false)
+  const isLoadingOlderMessagesRef = React.useRef(false)
+  const firstMessageRef = React.useRef<HTMLDivElement>(null)
+  const lastMessageRef = React.useRef<HTMLDivElement>(null)
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
+  // Handle scroll to load more messages
+  const handleScroll = React.useCallback(() => {
+    if (!messagesContainerRef.current || !onLoadMoreMessages || loadingMore || !hasMoreMessages) return
+    
+    const { scrollTop } = messagesContainerRef.current
+    // Load more when user scrolls to top (within 50px)
+    if (scrollTop < 50) {
+      // Mark that we're loading older messages
+      isLoadingOlderMessagesRef.current = true
+      
+      // Store the current scroll position and the height of the first message
+      if (firstMessageRef.current) {
+        const firstMessageRect = firstMessageRef.current.getBoundingClientRect()
+        const containerRect = messagesContainerRef.current.getBoundingClientRect()
+        scrollPositionRef.current = firstMessageRect.top - containerRect.top
+      }
+      
+      onLoadMoreMessages()
+    }
+  }, [onLoadMoreMessages, loadingMore, hasMoreMessages])
+
   React.useEffect(() => {
-    scrollToBottom()
+    const container = messagesContainerRef.current
+    if (container) {
+      container.addEventListener('scroll', handleScroll)
+      return () => container.removeEventListener('scroll', handleScroll)
+    }
+  }, [handleScroll])
+
+  // COMPLETELY REWRITTEN SCROLL LOGIC
+  React.useEffect(() => {
+    const container = messagesContainerRef.current
+    if (!container) return
+
+    const currentMessageCount = messages.length
+    const prevMessageCount = prevMessageCountRef.current
+
+    if (currentMessageCount > prevMessageCount) {
+      const messageDifference = currentMessageCount - prevMessageCount
+      
+      if (prevMessageCount === 0) {
+        // First load - scroll to bottom
+        scrollToBottom()
+      } else if (userSentMessageRef.current) {
+        // User sent a message - scroll to bottom
+        scrollToBottom()
+        userSentMessageRef.current = false
+      } else if (isLoadingOlderMessagesRef.current) {
+        // Loading older messages - preserve scroll position
+        isLoadingOlderMessagesRef.current = false
+        
+        // Use requestAnimationFrame to ensure DOM is updated
+        requestAnimationFrame(() => {
+          if (container && firstMessageRef.current) {
+            const firstMessageRect = firstMessageRef.current.getBoundingClientRect()
+            const containerRect = container.getBoundingClientRect()
+            const newScrollTop = firstMessageRect.top - containerRect.top - scrollPositionRef.current
+            
+            container.scrollTop = newScrollTop
+            scrollPositionRef.current = 0 // Reset
+          }
+        })
+      } else {
+        // New messages at the bottom (from other user) - scroll to bottom
+        scrollToBottom()
+      }
+    }
+
+    // Update refs
+    prevMessageCountRef.current = currentMessageCount
   }, [messages])
 
   const handleSendMessage = () => {
     if (newMessage.trim()) {
+      userSentMessageRef.current = true // Mark that user is sending a message
       onSendMessage(newMessage.trim())
-      setNewMessage('')
+      setNewMessage('') // Clear input immediately for better UX
     }
   }
 
@@ -211,7 +292,15 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           minHeight: 0,
           maxHeight: '100%',
         }}
+        ref={messagesContainerRef}
       >
+        {/* Loading more messages indicator */}
+        {loadingMore && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+            <CircularProgress size={24} />
+          </Box>
+        )}
+        
         {loading ? (
           // Loading skeletons
           Array.from({ length: 5 }).map((_, index) => (
@@ -250,122 +339,147 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
             </Typography>
           </Box>
         ) : (
-          <AnimatePresence>
-            {messages.map((message, index) => {
-              const isOwnMessage = message.senderId === currentUserId
+          // SMOOTH MESSAGE RENDERING - Lightweight CSS animations
+          messages.map((message, index) => {
+            const isOwnMessage = message.senderId === currentUserId
+            const isFirstMessage = index === 0
+            const isLastMessage = index === messages.length - 1
 
-              return (
-                <motion.div
-                  key={message.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ delay: index * 0.1 }}
+            return (
+              <Box
+                key={message.id}
+                ref={isFirstMessage ? firstMessageRef : isLastMessage ? lastMessageRef : null}
+                sx={{
+                  display: 'flex',
+                  justifyContent: isOwnMessage ? 'flex-end' : 'flex-start',
+                  mb: 2,
+                  width: '100%',
+                  // Subtle slide-in animation for new messages
+                  animation: 'slideInUp 0.3s ease-out',
+                  '@keyframes slideInUp': {
+                    '0%': {
+                      opacity: 0,
+                      transform: 'translateY(10px)',
+                    },
+                    '100%': {
+                      opacity: 1,
+                      transform: 'translateY(0)',
+                    },
+                  },
+                }}
+              >
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexDirection: isOwnMessage ? 'row-reverse' : 'row',
+                    alignItems: 'flex-end',
+                    gap: 1,
+                    maxWidth: { xs: '85%', sm: '70%' },
+                    minWidth: 0,
+                  }}
                 >
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      justifyContent: isOwnMessage ? 'flex-end' : 'flex-start',
-                      mb: 2,
-                      width: '100%',
-                    }}
-                  >
+                  {!isOwnMessage && (
+                    <Avatar
+                      src={message.sender.avatar}
+                      alt={`${message.sender.firstName} ${message.sender.lastName}`}
+                      sx={{ 
+                        width: 32, 
+                        height: 32,
+                        fontSize: '0.875rem',
+                        transition: 'transform 0.2s ease',
+                        '&:hover': {
+                          transform: 'scale(1.1)',
+                        },
+                      }}
+                    >
+                      {message.sender.firstName[0]}{message.sender.lastName[0]}
+                    </Avatar>
+                  )}
+                  <Box>
+                    <Paper
+                      sx={{
+                        p: 2,
+                        backgroundColor: isOwnMessage ? 'primary.main' : 'white',
+                        color: isOwnMessage ? 'primary.contrastText' : 'text.primary',
+                        borderRadius: 3,
+                        maxWidth: '100%',
+                        minWidth: 0,
+                        wordBreak: 'break-word',
+                        overflowWrap: 'break-word',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                        position: 'relative',
+                        opacity: message.status === 'SENDING' ? 0.7 : 1,
+                        // Smooth hover effect
+                        transition: 'all 0.2s ease',
+                        '&:hover': {
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                          transform: 'translateY(-1px)',
+                        },
+                        '&::before': {
+                          content: '""',
+                          position: 'absolute',
+                          top: '50%',
+                          [isOwnMessage ? 'right' : 'left']: -8,
+                          transform: 'translateY(-50%)',
+                          width: 0,
+                          height: 0,
+                          borderStyle: 'solid',
+                          borderWidth: '8px 0 8px 8px',
+                          borderColor: `transparent transparent transparent ${isOwnMessage ? 'primary.main' : 'white'}`,
+                          [isOwnMessage ? 'borderLeftColor' : 'borderRightColor']: isOwnMessage ? 'primary.main' : 'white',
+                          [isOwnMessage ? 'borderRightColor' : 'borderLeftColor']: 'transparent',
+                        },
+                      }}
+                    >
+                      <Typography variant="body1" sx={{ lineHeight: 1.5, wordBreak: 'break-word' }}>
+                        {message.content}
+                      </Typography>
+                    </Paper>
                     <Box
                       sx={{
                         display: 'flex',
-                        flexDirection: isOwnMessage ? 'row-reverse' : 'row',
-                        alignItems: 'flex-end',
+                        alignItems: 'center',
                         gap: 1,
-                        maxWidth: { xs: '85%', sm: '70%' },
-                        minWidth: 0,
+                        mt: 0.5,
+                        justifyContent: isOwnMessage ? 'flex-end' : 'flex-start',
                       }}
                     >
-                      {!isOwnMessage && (
-                        <Avatar
-                          src={message.sender.avatar}
-                          alt={`${message.sender.firstName} ${message.sender.lastName}`}
-                          sx={{ 
-                            width: 32, 
-                            height: 32,
-                            fontSize: '0.875rem',
-                          }}
-                        >
-                          {message.sender.firstName[0]}{message.sender.lastName[0]}
-                        </Avatar>
-                      )}
-                      <Box>
-                        <Paper
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          opacity: 0.6,
+                          fontSize: '0.75rem',
+                          transition: 'opacity 0.2s ease',
+                          '&:hover': {
+                            opacity: 0.8,
+                          },
+                        }}
+                      >
+                        {formatDistanceToNow(new Date(message.createdAt), { addSuffix: true })}
+                      </Typography>
+                      {isOwnMessage && (
+                        <Typography
+                          variant="caption"
                           sx={{
-                            p: 2,
-                            backgroundColor: isOwnMessage ? 'primary.main' : 'white',
-                            color: isOwnMessage ? 'primary.contrastText' : 'text.primary',
-                            borderRadius: 3,
-                            maxWidth: '100%',
-                            minWidth: 0,
-                            wordBreak: 'break-word',
-                            overflowWrap: 'break-word',
-                            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                            position: 'relative',
-                            opacity: message.status === 'SENDING' ? 0.7 : 1,
-                            '&::before': {
-                              content: '""',
-                              position: 'absolute',
-                              top: '50%',
-                              [isOwnMessage ? 'right' : 'left']: -8,
-                              transform: 'translateY(-50%)',
-                              width: 0,
-                              height: 0,
-                              borderStyle: 'solid',
-                              borderWidth: '8px 0 8px 8px',
-                              borderColor: `transparent transparent transparent ${isOwnMessage ? 'primary.main' : 'white'}`,
-                              [isOwnMessage ? 'borderLeftColor' : 'borderRightColor']: isOwnMessage ? 'primary.main' : 'white',
-                              [isOwnMessage ? 'borderRightColor' : 'borderLeftColor']: 'transparent',
+                            opacity: 0.8,
+                            fontSize: '0.75rem',
+                            transition: 'opacity 0.2s ease',
+                            '&:hover': {
+                              opacity: 1,
                             },
                           }}
                         >
-                          <Typography variant="body1" sx={{ lineHeight: 1.5, wordBreak: 'break-word' }}>
-                            {message.content}
-                          </Typography>
-                        </Paper>
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 1,
-                            mt: 0.5,
-                            justifyContent: isOwnMessage ? 'flex-end' : 'flex-start',
-                          }}
-                        >
-                          <Typography
-                            variant="caption"
-                            sx={{
-                              opacity: 0.6,
-                              fontSize: '0.75rem',
-                            }}
-                          >
-                            {formatDistanceToNow(new Date(message.createdAt), { addSuffix: true })}
-                          </Typography>
-                          {isOwnMessage && (
-                            <Typography
-                              variant="caption"
-                              sx={{
-                                opacity: 0.8,
-                                fontSize: '0.75rem',
-                              }}
-                            >
-                              {message.status === 'SENDING' ? '⏳' : 
-                               message.status === 'READ' ? '✓✓' : 
-                               message.status === 'DELIVERED' ? '✓✓' : '✓'}
-                            </Typography>
-                          )}
-                        </Box>
-                      </Box>
+                          {message.status === 'SENDING' ? '⏳' : 
+                           message.status === 'READ' ? '✓✓' : 
+                           message.status === 'DELIVERED' ? '✓✓' : '✓'}
+                        </Typography>
+                      )}
                     </Box>
                   </Box>
-                </motion.div>
-              )
-            })}
-          </AnimatePresence>
+                </Box>
+              </Box>
+            )
+          })
         )}
         <div ref={messagesEndRef} />
       </Box>
@@ -398,6 +512,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
               '& .MuiOutlinedInput-root': {
                 borderRadius: 3,
                 backgroundColor: 'background.paper',
+                transition: 'all 0.2s ease',
                 '&:hover': {
                   '& .MuiOutlinedInput-notchedOutline': {
                     borderColor: 'primary.main',
@@ -423,12 +538,18 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                   backgroundColor: 'primary.main',
                   color: 'primary.contrastText',
                   flexShrink: 0,
+                  transition: 'all 0.2s ease',
                   '&:hover': {
                     backgroundColor: 'primary.dark',
+                    transform: 'scale(1.05)',
+                  },
+                  '&:active': {
+                    transform: 'scale(0.95)',
                   },
                   '&:disabled': {
                     backgroundColor: 'grey.300',
                     color: 'grey.500',
+                    transform: 'none',
                   },
                 }}
               >

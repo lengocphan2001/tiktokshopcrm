@@ -71,13 +71,14 @@ export class MessageController {
     try {
       const { conversationId } = req.params
       const userId = req.user!.id
-      const { limit = 50, offset = 0 } = req.query
+      const { limit = 5, page = 1, before } = req.query
 
       const messages = await this.messageService.getConversationMessages(
         conversationId,
         userId,
         Number(limit),
-        Number(offset)
+        before ? undefined : (Number(page) - 1) * Number(limit), // Use offset only if no cursor
+        before as string // Pass cursor for cursor-based pagination
       )
 
       res.json({
@@ -85,7 +86,6 @@ export class MessageController {
         data: messages,
       })
     } catch (error: any) {
-
       res.status(400).json({
         success: false,
         message: error.message || 'Failed to get messages',

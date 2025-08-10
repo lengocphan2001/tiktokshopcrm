@@ -75,6 +75,9 @@ interface MessagingAppProps {
   onConversationSelect: (conversation: Conversation) => void
   onSendMessage: (content: string) => void
   onStartConversation?: (user: User) => void
+  onLoadMoreMessages?: () => void
+  hasMoreMessages?: boolean
+  loadingMore?: boolean
 }
 
 export const MessagingApp: React.FC<MessagingAppProps> = ({
@@ -87,6 +90,9 @@ export const MessagingApp: React.FC<MessagingAppProps> = ({
   onConversationSelect,
   onSendMessage,
   onStartConversation,
+  onLoadMoreMessages,
+  hasMoreMessages = true,
+  loadingMore = false,
 }) => {
   const [userSelectorOpen, setUserSelectorOpen] = React.useState(false)
   const [showConversationList, setShowConversationList] = React.useState(true)
@@ -244,6 +250,9 @@ export const MessagingApp: React.FC<MessagingAppProps> = ({
               loading={loading}
               onSendMessage={onSendMessage}
               onBackToConversations={handleBackToConversations}
+              onLoadMoreMessages={onLoadMoreMessages}
+              hasMoreMessages={hasMoreMessages}
+              loadingMore={loadingMore}
             />
           </Paper>
         </Box>

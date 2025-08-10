@@ -61,7 +61,7 @@ export class MessageService {
     })
   }
 
-  async getConversationMessages(conversationId: string, userId: string, limit = 50, offset = 0) {
+  async getConversationMessages(conversationId: string, userId: string, limit = 50, offset = 0, before?: string) {
     // Verify user is part of conversation
     const participant = await this.prisma.conversationParticipant.findFirst({
       where: {
@@ -75,15 +75,25 @@ export class MessageService {
       throw new Error('User not part of conversation')
     }
 
+    // Build where clause for cursor-based pagination
+    const whereClause: any = {
+      conversationId
+    }
+
+    // If cursor is provided, use it for pagination
+    if (before) {
+      whereClause.createdAt = {
+        lt: new Date(before)
+      }
+    }
+
     return await this.prisma.message.findMany({
-      where: {
-        conversationId
-      },
+      where: whereClause,
       orderBy: {
         createdAt: 'desc'
       },
       take: limit,
-      skip: offset,
+      skip: before ? 0 : offset, // Only use skip if no cursor
       include: {
         sender: {
           select: {

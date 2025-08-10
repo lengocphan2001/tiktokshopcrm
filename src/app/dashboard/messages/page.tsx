@@ -63,14 +63,20 @@ export default function MessagesPage() {
   const [currentMessages, setCurrentMessages] = React.useState<Message[]>([])
   const [loading, setLoading] = React.useState(false)
   const [error, setError] = React.useState<string>('')
+  const [currentPage, setCurrentPage] = React.useState(1)
+  const [hasMoreMessages, setHasMoreMessages] = React.useState(true)
+  const [loadingMore, setLoadingMore] = React.useState(false)
 
-  // Get auth token
-  const getAuthToken = () => {
+  // PERFORMANCE: Memoize auth token to prevent unnecessary re-computations
+  const authToken = React.useMemo(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('auth-token')
     }
     return null
-  }
+  }, [])
+
+  // Get auth token
+  const getAuthToken = React.useCallback(() => authToken, [authToken])
 
   // Fetch conversations
   const fetchConversations = React.useCallback(async () => {
@@ -111,10 +117,10 @@ export default function MessagesPage() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [getAuthToken])
 
   // Fetch messages for a conversation
-  const fetchMessages = React.useCallback(async (conversationId: string) => {
+  const fetchMessages = React.useCallback(async (conversationId: string, page = 1, limit = 5) => {
     try {
       setLoading(true)
       const token = getAuthToken()
@@ -124,7 +130,7 @@ export default function MessagesPage() {
         return
       }
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001'}/api/messages/conversation/${conversationId}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001'}/api/messages/conversation/${conversationId}?page=${page}&limit=${limit}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -137,23 +143,36 @@ export default function MessagesPage() {
       }
 
       const data = await response.json()
-      // Reverse the messages to show oldest first (standard chat order)
-      setCurrentMessages((data.data || []).reverse())
+      const newMessages = data.data || []
+      
+      // For first load (page 1), replace messages. For pagination (page > 1), prepend messages
+      if (page === 1) {
+        setCurrentMessages(newMessages.reverse()) // Show newest first for chat
+      } else {
+        setCurrentMessages(prev => {
+          // Create a Set of existing message IDs for O(1) lookup
+          const existingMessageIds = new Set(prev.map(msg => msg.id))
+          
+          // Filter out duplicates from new messages
+          const uniqueNewMessages = newMessages.reverse().filter((msg: Message) => !existingMessageIds.has(msg.id))
+          
+          // Prepend unique new messages
+          return [...uniqueNewMessages, ...prev]
+        })
+      }
     } catch (error: any) {
       setError(error.message || 'Failed to load messages')
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [getAuthToken])
 
-  // Send message
-  const sendMessage = React.useCallback(async (content: string) => {
+  // Load more messages when scrolling up
+  const loadMoreMessages = React.useCallback(async () => {
+    if (!currentConversation || loadingMore || !hasMoreMessages) return
+    
     try {
-      if (!currentConversation) {
-        setError('No conversation selected')
-        return
-      }
-
+      setLoadingMore(true)
       const token = getAuthToken()
       
       if (!token) {
@@ -161,141 +180,158 @@ export default function MessagesPage() {
         return
       }
 
-      // Create optimistic message with unique ID
-      const tempId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-      const optimisticMessage = {
-        id: tempId,
-        content: content.trim(),
-        type: 'TEXT' as const,
-        status: 'SENDING' as const, // Show sending status
-        senderId: user?.id || '',
-        conversationId: currentConversation.id,
-        createdAt: new Date(),
-        sender: {
-          id: user?.id || '',
-          firstName: user?.firstName || '',
-          lastName: user?.lastName || '',
-          avatar: user?.avatar,
-        }
-      }
+      // Get the oldest message timestamp for cursor-based pagination
+      const oldestMessage = currentMessages[0]
+      const cursor = oldestMessage ? new Date(oldestMessage.createdAt).toISOString() : undefined
 
-      // INSTANT FRONTEND UPDATE - No waiting at all!
-      setCurrentMessages(prev => [...prev, optimisticMessage])
-      
-      // INSTANT conversation list update
-      setConversations(prev => {
-        const updatedConversations = prev.map(conv => 
-          conv.id === currentConversation.id 
-            ? {
-                ...conv,
-                messages: [...(conv.messages || []), optimisticMessage],
-                updatedAt: new Date(),
-              }
-            : conv
-        )
-        
-        // Sort by updatedAt (newest first)
-        return updatedConversations.sort((a, b) => 
-          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-        )
-      })
-
-      // PARALLEL BACKEND SYNC - Non-blocking!
-      fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001'}/api/messages`, {
-        method: 'POST',
+      const nextPage = currentPage + 1
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001'}/api/messages/conversation/${currentConversation.id}?page=${nextPage}&limit=5${cursor ? `&before=${cursor}` : ''}`, {
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          content,
-          conversationId: currentConversation.id,
-        }),
       })
-      .then(async (response) => {
-        if (!response.ok) {
-          throw new Error('Failed to send message')
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch more messages')
+      }
+
+      const data = await response.json()
+      const olderMessages = data.data || []
+      
+      if (olderMessages.length === 0) {
+        setHasMoreMessages(false)
+        return
+      }
+      
+      // Prepend older messages to current messages
+      setCurrentMessages(prev => {
+        // Create a Set of existing message IDs for O(1) lookup
+        const existingMessageIds = new Set(prev.map(msg => msg.id))
+        
+        // Filter out duplicates from older messages
+        const uniqueOlderMessages = olderMessages.reverse().filter((msg: Message) => !existingMessageIds.has(msg.id))
+        
+        // If no unique messages, we've reached the end
+        if (uniqueOlderMessages.length === 0) {
+          setHasMoreMessages(false)
+          return prev
         }
         
-        const data = await response.json()
-        const realMessage = data.data
-        
-        
-        
-        // Update with real message from server (replace optimistic message)
-        setCurrentMessages(prev => 
-          prev.map(msg => 
-            msg.id === tempId ? { ...realMessage, status: 'SENT' as const } : msg
-          )
-        )
-        
-        setConversations(prev => {
-          const updatedConversations = prev.map(conv => 
-            conv.id === currentConversation.id 
-              ? {
-                  ...conv,
-                  messages: conv.messages?.map(msg => 
-                    msg.id === tempId ? { ...realMessage, status: 'SENT' as const } : msg
-                  ) || [],
-                  updatedAt: new Date(),
-                }
-              : conv
-          )
-          
-          return updatedConversations.sort((a, b) => 
-            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-          )
-        })
+        // Prepend unique older messages
+        return [...uniqueOlderMessages, ...prev]
       })
-      .catch((error) => {
-        setError('Failed to send message')
-        
-        // Remove optimistic message on error
-        setCurrentMessages(prev => 
-          prev.filter(msg => msg.id !== tempId)
-        )
-        
-        // Remove from conversations list
-        setConversations(prev => {
-          const updatedConversations = prev.map(conv => 
-            conv.id === currentConversation?.id 
-              ? {
-                  ...conv,
-                  messages: conv.messages?.filter(msg => msg.id !== tempId) || [],
-                }
-              : conv
-          )
-          
-          return updatedConversations.sort((a, b) => 
-            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-          )
-        })
-      })
-      .catch((error) => {
-        // Remove optimistic message on error
-        setCurrentMessages(prev => prev.filter(msg => msg.id !== tempId))
-        setConversations(prev => {
-          const updatedConversations = prev.map(conv => 
-            conv.id === currentConversation.id 
-              ? {
-                  ...conv,
-                  messages: conv.messages?.filter(msg => msg.id !== tempId) || [],
-                  updatedAt: new Date(),
-                }
-              : conv
-          )
-          
-          return updatedConversations.sort((a, b) => 
-            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-          )
-        })
-        setError(error.message || 'Failed to send message')
-      })
+      setCurrentPage(nextPage)
       
     } catch (error: any) {
-      setError(error.message || 'Failed to send message')
+      setError(error.message || 'Failed to load more messages')
+    } finally {
+      setLoadingMore(false)
     }
-  }, [currentConversation, user])
+  }, [currentConversation, currentPage, loadingMore, hasMoreMessages, getAuthToken, currentMessages])
+
+  // Send message
+  const sendMessage = React.useCallback(async (content: string) => {
+    if (!currentConversation) {
+      setError('No conversation selected')
+      return
+    }
+
+    const token = getAuthToken()
+    if (!token) {
+      setError('Authentication required')
+      return
+    }
+
+    // Create optimistic message with unique ID
+    const tempId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    const optimisticMessage = {
+      id: tempId,
+      content: content.trim(),
+      type: 'TEXT' as const,
+      status: 'SENDING' as const,
+      senderId: user?.id || '',
+      conversationId: currentConversation.id,
+      createdAt: new Date(),
+      sender: {
+        id: user?.id || '',
+        firstName: user?.firstName || '',
+        lastName: user?.lastName || '',
+        avatar: user?.avatar,
+      }
+    }
+
+    // ULTRA-FAST FRONTEND UPDATE - Update both current messages and conversation list
+    setCurrentMessages(prev => [...prev, optimisticMessage])
+    
+    // Update conversation list to show latest message
+    setConversations(prev => {
+      const existingIndex = prev.findIndex(conv => conv.id === currentConversation.id)
+      if (existingIndex === -1) return prev
+      
+      const existingConversation = prev[existingIndex]
+      const updatedConversation = {
+        ...existingConversation,
+        messages: [optimisticMessage], // Show the latest message
+        updatedAt: new Date(),
+      }
+      
+      // Move to top of list
+      const otherConversations = prev.filter((_, index) => index !== existingIndex)
+      return [updatedConversation, ...otherConversations]
+    })
+
+    // NON-BLOCKING BACKEND SYNC - Fire and forget, no await
+    fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001'}/api/messages`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        content,
+        conversationId: currentConversation.id,
+      }),
+    })
+    .then(async (response) => {
+      if (!response.ok) {
+        throw new Error('Failed to send message')
+      }
+      
+      const data = await response.json()
+      const realMessage = data.data
+      
+      // Update with real message from server (replace optimistic message)
+      setCurrentMessages(prev => 
+        prev.map(msg => 
+          msg.id === tempId ? { ...realMessage, status: 'SENT' as const } : msg
+        )
+      )
+      
+      // Update conversation list with real message
+      setConversations(prev => {
+        const existingIndex = prev.findIndex(conv => conv.id === currentConversation.id)
+        if (existingIndex === -1) return prev
+        
+        const existingConversation = prev[existingIndex]
+        const updatedConversation = {
+          ...existingConversation,
+          messages: [{ ...realMessage, status: 'SENT' as const }], // Show the real message
+          updatedAt: new Date(),
+        }
+        
+        // Keep at top of list
+        const otherConversations = prev.filter((_, index) => index !== existingIndex)
+        return [updatedConversation, ...otherConversations]
+      })
+    })
+    .catch((error) => {
+      // Remove optimistic message on error
+      setCurrentMessages(prev => prev.filter(msg => msg.id !== tempId))
+      setError('Failed to send message')
+    })
+  }, [currentConversation, user, getAuthToken])
 
   // Start conversation with user
   const startConversation = React.useCallback(async (selectedUser: User) => {
@@ -339,7 +375,7 @@ export default function MessagesPage() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [getAuthToken])
 
   // Handle conversation selection
   const handleConversationSelect = React.useCallback((conversation: Conversation) => {
@@ -353,63 +389,59 @@ export default function MessagesPage() {
     
     setCurrentConversation(conversation)
     setError('')
-    fetchMessages(conversation.id)
-  }, [fetchMessages, currentConversation, joinConversation, leaveConversation])
+    setCurrentPage(1)
+    setHasMoreMessages(true)
+    fetchMessages(conversation.id, 1, 5) // Reset to page 1 with 5 messages
+  }, [currentConversation, leaveConversation, joinConversation, fetchMessages])
 
   // Handle real-time messages
   const handleNewMessage = React.useCallback((message: any) => {
-    
     // Only add message to current messages if it's for the current conversation and not from the current user
-    // AND if the message doesn't already exist (to prevent duplicates)
     if (currentConversation && message.conversationId === currentConversation.id && message.senderId !== user?.id) {
       setCurrentMessages(prev => {
-        // Check if message already exists to prevent duplicates
-        const messageExists = prev.some(m => m.id === message.id)
-        if (messageExists) {
+        // ULTRA-FAST duplicate check using Set
+        const messageIds = new Set(prev.map(m => m.id))
+        if (messageIds.has(message.id)) {
           return prev
         }
         return [...prev, message]
       })
     }
     
-    // Always update conversations list to show the new message and move to top
+    // EFFICIENT conversation list update - move conversation to top with latest message
     setConversations(prev => {
-      const updatedConversations = prev.map(conv => 
-        conv.id === message.conversationId 
-          ? {
-              ...conv,
-              // Check if message already exists (to avoid duplicates from optimistic updates)
-              messages: conv.messages?.some(m => m.id === message.id) 
-                ? conv.messages 
-                : [...(conv.messages || []), message],
-              updatedAt: new Date(),
-            }
-          : conv
-      )
+      const existingIndex = prev.findIndex(conv => conv.id === message.conversationId)
+      if (existingIndex === -1) return prev
       
+      const existingConversation = prev[existingIndex]
+      const updatedConversation = {
+        ...existingConversation,
+        messages: [...(existingConversation.messages || []), message].slice(-1), // Keep only the latest message
+        updatedAt: new Date(),
+      }
       
-      // Sort by updatedAt (newest first)
-      return updatedConversations.sort((a, b) => 
-        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-      )
+      // Move to top of list
+      const otherConversations = prev.filter((_, index) => index !== existingIndex)
+      return [updatedConversation, ...otherConversations]
     })
   }, [currentConversation, user?.id])
 
   const handleConversationUpdate = React.useCallback((conversation: Conversation) => {
-    // Update conversations list with the updated conversation and sort
+    // FAST conversation list update - only if it's the current conversation
+    if (currentConversation && conversation.id === currentConversation.id) {
+      setCurrentConversation(conversation)
+    }
+    
+    // Update conversations list only if needed
     setConversations(prev => {
-      const updatedConversations = prev.map(conv => 
-        conv.id === conversation.id 
-          ? conversation
-          : conv
-      )
+      const existingIndex = prev.findIndex(conv => conv.id === conversation.id)
+      if (existingIndex === -1) return prev
       
-      // Sort by updatedAt (newest first)
-      return updatedConversations.sort((a, b) => 
-        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-      )
+      const updated = [...prev]
+      updated[existingIndex] = conversation
+      return updated
     })
-  }, [])
+  }, [currentConversation])
 
   React.useEffect(() => {
     // Register callbacks and get cleanup functions
@@ -456,6 +488,9 @@ export default function MessagesPage() {
         onConversationSelect={handleConversationSelect}
         onSendMessage={sendMessage}
         onStartConversation={startConversation}
+        onLoadMoreMessages={loadMoreMessages}
+        hasMoreMessages={hasMoreMessages}
+        loadingMore={loadingMore}
       />
     </Box>
   )
