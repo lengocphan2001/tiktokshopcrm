@@ -1,0 +1,80 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: tiktokshopcrm_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: tiktokshopcrm
+      POSTGRES_USER: tiktokshopcrm_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/prisma/migrations:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    networks:
+      - tiktokshopcrm_network
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: tiktokshopcrm_backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://tiktokshopcrm_user:${POSTGRES_PASSWORD}@postgres:5432/tiktokshopcrm
+      JWT_SECRET: ${JWT_SECRET}
+      NODE_ENV: production
+      PORT: 3001
+      CORS_ORIGIN: https://ninetails.site
+    volumes:
+      - ./backend/uploads:/app/uploads
+    ports:
+      - "3001:3001"
+    depends_on:
+      - postgres
+    networks:
+      - tiktokshopcrm_network
+    command: >
+      sh -c "
+        npx prisma migrate deploy &&
+        npm start
+      "
+
+  # Frontend (Next.js)
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: tiktokshopcrm_frontend
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_BACKEND_URL: https://ninetails.site/api
+      NODE_ENV: production
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - tiktokshopcrm_network
+
+  # Redis for caching and sessions (optional)
+  redis:
+    image: redis:7-alpine
+    container_name: tiktokshopcrm_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - tiktokshopcrm_network
+
+volumes:
+  postgres_data:
+
+networks:
+  tiktokshopcrm_network:
+    driver: bridge
