@@ -55,6 +55,7 @@ services:
     environment:
       NEXT_PUBLIC_BACKEND_URL: https://ninetails.site/api
       NODE_ENV: production
+      NODE_OPTIONS: "--max-old-space-size=4096"
     ports:
       - "3000:3000"
     depends_on:
