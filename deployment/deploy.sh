@@ -65,6 +65,13 @@ fi
 
 cd $APP_DIR
 
+# Ensure correct directory structure
+print_status "Verifying directory structure..."
+if [ ! -d "backend" ] || [ ! -d "deployment" ]; then
+    print_error "Invalid directory structure. Make sure you're in the project root with backend/ and deployment/ folders."
+    exit 1
+fi
+
 # Create environment file
 print_status "Creating environment file..."
 if [ ! -f "deployment/.env" ]; then

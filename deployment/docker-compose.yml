@@ -12,7 +12,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./backend/prisma/migrations:/docker-entrypoint-initdb.d
+      - ../backend/prisma/migrations:/docker-entrypoint-initdb.d
     ports:
       - "5432:5432"
     networks:
@@ -21,7 +21,7 @@ services:
   # Backend API
   backend:
     build:
-      context: ./backend
+      context: ../backend
       dockerfile: Dockerfile
     container_name: tiktokshopcrm_backend
     restart: unless-stopped
@@ -32,7 +32,7 @@ services:
       PORT: 3001
       CORS_ORIGIN: https://ninetails.site
     volumes:
-      - ./backend/uploads:/app/uploads
+      - ../backend/uploads:/app/uploads
     ports:
       - "3001:3001"
     depends_on:
@@ -48,7 +48,7 @@ services:
   # Frontend (Next.js)
   frontend:
     build:
-      context: .
+      context: ..
       dockerfile: Dockerfile.frontend
     container_name: tiktokshopcrm_frontend
     restart: unless-stopped
