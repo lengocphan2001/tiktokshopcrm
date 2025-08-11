@@ -53,11 +53,14 @@ APP_DIR="/opt/tiktokshopcrm"
 print_status "Creating application directory: $APP_DIR"
 sudo mkdir -p $APP_DIR
 sudo chown $USER:$USER $APP_DIR
+sudo chmod 755 $APP_DIR
 
 # Clone or copy application files
 if [ -d ".git" ]; then
     print_status "Copying application files..."
-    cp -r . $APP_DIR/
+    # Use rsync to preserve permissions and handle large files better
+    sudo rsync -av --exclude='.git' --exclude='node_modules' --exclude='.next' . $APP_DIR/
+    sudo chown -R $USER:$USER $APP_DIR
 else
     print_error "Please run this script from the application root directory"
     exit 1
