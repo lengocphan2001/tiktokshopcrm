@@ -6,7 +6,6 @@ import {
   Card,
   CardContent,
   Typography,
-  Grid,
   Button,
   Alert,
   CircularProgress,
@@ -294,91 +293,93 @@ export default function TikTokShopProducts() {
           {editingProduct ? 'Edit Product' : 'Create Product'}
         </DialogTitle>
         <DialogContent>
-          <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Product Name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                required
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="SKU"
-                value={formData.sku}
-                onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
-                required
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Description"
-                multiline
-                rows={3}
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Price"
-                type="number"
-                value={formData.price}
-                onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
-                required
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
-                <InputLabel>Currency</InputLabel>
-                <Select
-                  value={formData.currency}
-                  onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
-                  label="Currency"
-                >
-                  <MenuItem value="USD">USD</MenuItem>
-                  <MenuItem value="EUR">EUR</MenuItem>
-                  <MenuItem value="GBP">GBP</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Stock"
-                type="number"
-                value={formData.stock}
-                onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) || 0 })}
-                required
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Category"
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                required
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Image URLs (comma separated)"
-                value={formData.images.join(', ')}
-                onChange={(e) => setFormData({ 
-                  ...formData, 
-                  images: e.target.value.split(',').map(url => url.trim()).filter(url => url)
-                })}
-                helperText="Enter image URLs separated by commas"
-              />
-            </Grid>
-          </Grid>
+          <Box sx={{ mt: 1 }}>
+            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
+              <Box sx={{ flex: 1 }}>
+                <TextField
+                  fullWidth
+                  label="Product Name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  required
+                />
+              </Box>
+              <Box sx={{ flex: 1 }}>
+                <TextField
+                  fullWidth
+                  label="SKU"
+                  value={formData.sku}
+                  onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
+                  required
+                />
+              </Box>
+            </Box>
+            <TextField
+              fullWidth
+              label="Description"
+              multiline
+              rows={3}
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            />
+            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, mt: 2 }}>
+              <Box sx={{ flex: 1 }}>
+                <TextField
+                  fullWidth
+                  label="Price"
+                  type="number"
+                  value={formData.price}
+                  onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
+                  required
+                />
+              </Box>
+              <Box sx={{ flex: 1 }}>
+                <FormControl fullWidth>
+                  <InputLabel>Currency</InputLabel>
+                  <Select
+                    value={formData.currency}
+                    onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
+                    label="Currency"
+                  >
+                    <MenuItem value="USD">USD</MenuItem>
+                    <MenuItem value="EUR">EUR</MenuItem>
+                    <MenuItem value="GBP">GBP</MenuItem>
+                  </Select>
+                </FormControl>
+              </Box>
+            </Box>
+            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, mt: 2 }}>
+              <Box sx={{ flex: 1 }}>
+                <TextField
+                  fullWidth
+                  label="Stock"
+                  type="number"
+                  value={formData.stock}
+                  onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) || 0 })}
+                  required
+                />
+              </Box>
+              <Box sx={{ flex: 1 }}>
+                <TextField
+                  fullWidth
+                  label="Category"
+                  value={formData.category}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  required
+                />
+              </Box>
+            </Box>
+            <TextField
+              fullWidth
+              label="Image URLs (comma separated)"
+              value={formData.images.join(', ')}
+              onChange={(e) => setFormData({ 
+                ...formData, 
+                images: e.target.value.split(',').map(url => url.trim()).filter(url => url)
+              })}
+              helperText="Enter image URLs separated by commas"
+            />
+          </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDialogOpen(false)}>

@@ -6,7 +6,6 @@ import {
   Typography,
   Card,
   CardContent,
-  Grid,
   Chip,
   Fade,
   useTheme,
@@ -264,8 +263,8 @@ export const TimeRecords: React.FC<TimeRecordsProps> = ({ userId }) => {
         </Card>
 
         {/* Summary Stats */}
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} sm={6} md={3}>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 4 }}>
+          <Box sx={{ flex: 1, minWidth: 200 }}>
             <Card elevation={0} sx={{ 
               border: `1px solid ${theme.palette.divider}`,
               background: `linear-gradient(135deg, ${alpha(theme.palette.success.main, 0.05)} 0%, ${alpha(theme.palette.success.main, 0.02)} 100%)`,
@@ -282,9 +281,9 @@ export const TimeRecords: React.FC<TimeRecordsProps> = ({ userId }) => {
                 </Typography>
               </CardContent>
             </Card>
-          </Grid>
+          </Box>
           
-          <Grid item xs={12} sm={6} md={3}>
+          <Box sx={{ flex: 1, minWidth: 200 }}>
             <Card elevation={0} sx={{ 
               border: `1px solid ${theme.palette.divider}`,
               background: `linear-gradient(135deg, ${alpha(theme.palette.info.main, 0.05)} 0%, ${alpha(theme.palette.info.main, 0.02)} 100%)`,
@@ -301,9 +300,9 @@ export const TimeRecords: React.FC<TimeRecordsProps> = ({ userId }) => {
                 </Typography>
               </CardContent>
             </Card>
-          </Grid>
+          </Box>
           
-          <Grid item xs={12} sm={6} md={3}>
+          <Box sx={{ flex: 1, minWidth: 200 }}>
             <Card elevation={0} sx={{ 
               border: `1px solid ${theme.palette.divider}`,
               background: `linear-gradient(135deg, ${alpha(theme.palette.warning.main, 0.05)} 0%, ${alpha(theme.palette.warning.main, 0.02)} 100%)`,
@@ -320,9 +319,9 @@ export const TimeRecords: React.FC<TimeRecordsProps> = ({ userId }) => {
                 </Typography>
               </CardContent>
             </Card>
-          </Grid>
+          </Box>
           
-          <Grid item xs={12} sm={6} md={3}>
+          <Box sx={{ flex: 1, minWidth: 200 }}>
             <Card elevation={0} sx={{ 
               border: `1px solid ${theme.palette.divider}`,
               background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.05)} 0%, ${alpha(theme.palette.primary.main, 0.02)} 100%)`,
@@ -339,8 +338,8 @@ export const TimeRecords: React.FC<TimeRecordsProps> = ({ userId }) => {
                 </Typography>
               </CardContent>
             </Card>
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
 
         {/* Records Table */}
         <Card elevation={0} sx={{ border: `1px solid ${theme.palette.divider}` }}>
@@ -421,8 +420,8 @@ export const TimeRecords: React.FC<TimeRecordsProps> = ({ userId }) => {
               Time Distribution
             </Typography>
             
-            <Grid container spacing={3}>
-              <Grid item xs={12} md={6}>
+            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3 }}>
+              <Box sx={{ flex: 1 }}>
                 <Box sx={{ mb: 3 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                     <Typography variant="body2" color="text.secondary">
@@ -456,9 +455,9 @@ export const TimeRecords: React.FC<TimeRecordsProps> = ({ userId }) => {
                     sx={{ height: 8, borderRadius: 4 }}
                   />
                 </Box>
-              </Grid>
+              </Box>
               
-              <Grid item xs={12} md={6}>
+              <Box sx={{ flex: 1 }}>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2, borderRadius: 2, backgroundColor: alpha(theme.palette.success.main, 0.05) }}>
                     <Box
@@ -488,8 +487,8 @@ export const TimeRecords: React.FC<TimeRecordsProps> = ({ userId }) => {
                     </Typography>
                   </Box>
                 </Box>
-              </Grid>
-            </Grid>
+              </Box>
+            </Box>
           </CardContent>
         </Card>
       </Box>

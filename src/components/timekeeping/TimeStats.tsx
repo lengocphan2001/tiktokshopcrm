@@ -1,18 +1,45 @@
 'use client';
 
-import * as React from 'react'
+import React from 'react'
 import {
   Box,
-  Typography,
   Card,
   CardContent,
-  Grid,
+  Typography,
+  Button,
+  Alert,
+  CircularProgress,
   Chip,
+  IconButton,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Pagination,
+  Stack,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  List,
+  ListItem,
+  ListItemText,
+  Divider,
   Fade,
   useTheme,
   alpha,
   Avatar,
-  LinearProgress,
+  LinearProgress
 } from '@mui/material'
 import {
   TrendingUp as TrendingUpIcon,
@@ -152,8 +179,8 @@ export const TimeStats: React.FC<TimeStatsProps> = ({ userId }) => {
         </Card>
 
         {/* Main Stats Grid */}
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} sm={6} md={3}>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 4 }}>
+          <Box sx={{ flex: '1 1 250px', minWidth: 0 }}>
             <Card elevation={0} sx={{ 
               border: `1px solid ${theme.palette.divider}`,
               background: `linear-gradient(135deg, ${alpha(theme.palette.success.main, 0.05)} 0%, ${alpha(theme.palette.success.main, 0.02)} 100%)`,
@@ -171,9 +198,9 @@ export const TimeStats: React.FC<TimeStatsProps> = ({ userId }) => {
                 </Typography>
               </CardContent>
             </Card>
-          </Grid>
+          </Box>
           
-          <Grid item xs={12} sm={6} md={3}>
+          <Box sx={{ flex: '1 1 250px', minWidth: 0 }}>
             <Card elevation={0} sx={{ 
               border: `1px solid ${theme.palette.divider}`,
               background: `linear-gradient(135deg, ${alpha(theme.palette.info.main, 0.05)} 0%, ${alpha(theme.palette.info.main, 0.02)} 100%)`,
@@ -191,9 +218,9 @@ export const TimeStats: React.FC<TimeStatsProps> = ({ userId }) => {
                 </Typography>
               </CardContent>
             </Card>
-          </Grid>
+          </Box>
           
-          <Grid item xs={12} sm={6} md={3}>
+          <Box sx={{ flex: '1 1 250px', minWidth: 0 }}>
             <Card elevation={0} sx={{ 
               border: `1px solid ${theme.palette.divider}`,
               background: `linear-gradient(135deg, ${alpha(theme.palette.warning.main, 0.05)} 0%, ${alpha(theme.palette.warning.main, 0.02)} 100%)`,
@@ -211,9 +238,9 @@ export const TimeStats: React.FC<TimeStatsProps> = ({ userId }) => {
                 </Typography>
               </CardContent>
             </Card>
-          </Grid>
+          </Box>
           
-          <Grid item xs={12} sm={6} md={3}>
+          <Box sx={{ flex: '1 1 250px', minWidth: 0 }}>
             <Card elevation={0} sx={{ 
               border: `1px solid ${theme.palette.divider}`,
               background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.05)} 0%, ${alpha(theme.palette.primary.main, 0.02)} 100%)`,
@@ -231,13 +258,13 @@ export const TimeStats: React.FC<TimeStatsProps> = ({ userId }) => {
                 </Typography>
               </CardContent>
             </Card>
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
 
         {/* Detailed Stats */}
-        <Grid container spacing={4}>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
           {/* Attendance Progress */}
-          <Grid item xs={12} md={6}>
+          <Box sx={{ flex: '1 1 400px', minWidth: 0 }}>
             <Card elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, height: '100%' }}>
               <CardContent sx={{ p: 3 }}>
                 <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -279,10 +306,10 @@ export const TimeStats: React.FC<TimeStatsProps> = ({ userId }) => {
                 </Box>
               </CardContent>
             </Card>
-          </Grid>
+          </Box>
 
           {/* Weekly Overview */}
-          <Grid item xs={12} md={6}>
+          <Box sx={{ flex: '1 1 400px', minWidth: 0 }}>
             <Card elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, height: '100%' }}>
               <CardContent sx={{ p: 3 }}>
                 <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -318,8 +345,8 @@ export const TimeStats: React.FC<TimeStatsProps> = ({ userId }) => {
                 </Box>
               </CardContent>
             </Card>
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
 
         {/* Performance Insights */}
         <Card elevation={0} sx={{ mt: 4, border: `1px solid ${theme.palette.divider}` }}>
@@ -329,8 +356,8 @@ export const TimeStats: React.FC<TimeStatsProps> = ({ userId }) => {
               Performance Insights
             </Typography>
             
-            <Grid container spacing={3}>
-              <Grid item xs={12} sm={6} md={4}>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+              <Box sx={{ flex: '1 1 300px', minWidth: 0 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2, borderRadius: 2, backgroundColor: alpha(theme.palette.success.main, 0.05) }}>
                   <CheckIcon color="success" />
                   <Box>
@@ -342,9 +369,9 @@ export const TimeStats: React.FC<TimeStatsProps> = ({ userId }) => {
                     </Typography>
                   </Box>
                 </Box>
-              </Grid>
+              </Box>
               
-              <Grid item xs={12} sm={6} md={4}>
+              <Box sx={{ flex: '1 1 300px', minWidth: 0 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2, borderRadius: 2, backgroundColor: alpha(theme.palette.warning.main, 0.05) }}>
                   <WarningIcon color="warning" />
                   <Box>
@@ -356,9 +383,9 @@ export const TimeStats: React.FC<TimeStatsProps> = ({ userId }) => {
                     </Typography>
                   </Box>
                 </Box>
-              </Grid>
+              </Box>
               
-              <Grid item xs={12} sm={6} md={4}>
+              <Box sx={{ flex: '1 1 300px', minWidth: 0 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2, borderRadius: 2, backgroundColor: alpha(theme.palette.info.main, 0.05) }}>
                   <TrendingUpIcon color="info" />
                   <Box>
@@ -370,8 +397,8 @@ export const TimeStats: React.FC<TimeStatsProps> = ({ userId }) => {
                     </Typography>
                   </Box>
                 </Box>
-              </Grid>
-            </Grid>
+              </Box>
+            </Box>
           </CardContent>
         </Card>
       </Box>

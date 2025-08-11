@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react'
-import { Box, Container, Typography, Grid, Tabs, Tab, Card, CardContent, Fade, useTheme, alpha } from '@mui/material'
+import { Box, Container, Typography, Tabs, Tab, Card, CardContent, Fade, useTheme, alpha } from '@mui/material'
 import { AttendanceCalendar } from '@/components/timekeeping/AttendanceCalendar'
 import { AdminAttendanceOverview } from '@/components/timekeeping/AdminAttendanceOverview'
 import { useUser } from '@/hooks/use-user'
@@ -94,8 +94,8 @@ export default function TimekeepingPage() {
         </Card>
         
         {/* Quick Stats Overview */}
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} sm={6} md={3}>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 4 }}>
+          <Box sx={{ flex: '1 1 250px', minWidth: 0 }}>
             <Card elevation={0} sx={{ 
               border: `1px solid ${theme.palette.divider}`,
               background: `linear-gradient(135deg, ${alpha(theme.palette.success.main, 0.05)} 0%, ${alpha(theme.palette.success.main, 0.02)} 100%)`,
@@ -112,9 +112,9 @@ export default function TimekeepingPage() {
                 </Typography>
               </CardContent>
             </Card>
-          </Grid>
+          </Box>
           
-          <Grid item xs={12} sm={6} md={3}>
+          <Box sx={{ flex: '1 1 250px', minWidth: 0 }}>
             <Card elevation={0} sx={{ 
               border: `1px solid ${theme.palette.divider}`,
               background: `linear-gradient(135deg, ${alpha(theme.palette.info.main, 0.05)} 0%, ${alpha(theme.palette.info.main, 0.02)} 100%)`,
@@ -131,9 +131,9 @@ export default function TimekeepingPage() {
                 </Typography>
               </CardContent>
             </Card>
-          </Grid>
+          </Box>
           
-          <Grid item xs={12} sm={6} md={3}>
+          <Box sx={{ flex: '1 1 250px', minWidth: 0 }}>
             <Card elevation={0} sx={{ 
               border: `1px solid ${theme.palette.divider}`,
               background: `linear-gradient(135deg, ${alpha(theme.palette.warning.main, 0.05)} 0%, ${alpha(theme.palette.warning.main, 0.02)} 100%)`,
@@ -150,9 +150,9 @@ export default function TimekeepingPage() {
                 </Typography>
               </CardContent>
             </Card>
-          </Grid>
+          </Box>
           
-          <Grid item xs={12} sm={6} md={3}>
+          <Box sx={{ flex: '1 1 250px', minWidth: 0 }}>
             <Card elevation={0} sx={{ 
               border: `1px solid ${theme.palette.divider}`,
               background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.05)} 0%, ${alpha(theme.palette.primary.main, 0.02)} 100%)`,
@@ -169,8 +169,8 @@ export default function TimekeepingPage() {
                 </Typography>
               </CardContent>
             </Card>
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
 
         {/* Main Content Tabs */}
         <Card elevation={0} sx={{ border: `1px solid ${theme.palette.divider}` }}>

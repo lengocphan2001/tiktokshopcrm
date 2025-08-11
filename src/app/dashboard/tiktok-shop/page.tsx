@@ -6,12 +6,10 @@ import {
   Card,
   CardContent,
   Typography,
-  Grid,
   Button,
   Alert,
   CircularProgress,
   Chip,
-  IconButton,
   Stack
 } from '@mui/material'
 import {
@@ -45,9 +43,9 @@ export default function TikTokShopDashboard() {
 
       // Test connection first
       const connectionResponse = await tiktokShopApi.testConnection()
-      setConnectionStatus(connectionResponse.data.connected)
+      setConnectionStatus(connectionResponse.success)
 
-      if (connectionResponse.data.connected) {
+      if (connectionResponse.success) {
         const statsData = await tiktokShopApi.getShopStats()
         setStats(statsData)
       }
@@ -112,8 +110,8 @@ export default function TikTokShopDashboard() {
       {connectionStatus === true && stats && (
         <>
           {/* Stats Cards */}
-          <Grid container spacing={3} sx={{ mb: 4 }}>
-            <Grid item xs={12} sm={6} md={3}>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 4 }}>
+            <Box sx={{ flex: 1 }}>
               <Card>
                 <CardContent>
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
@@ -125,9 +123,9 @@ export default function TikTokShopDashboard() {
                   </Typography>
                 </CardContent>
               </Card>
-            </Grid>
+            </Box>
 
-            <Grid item xs={12} sm={6} md={3}>
+            <Box sx={{ flex: 1 }}>
               <Card>
                 <CardContent>
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
@@ -139,9 +137,9 @@ export default function TikTokShopDashboard() {
                   </Typography>
                 </CardContent>
               </Card>
-            </Grid>
+            </Box>
 
-            <Grid item xs={12} sm={6} md={3}>
+            <Box sx={{ flex: 1 }}>
               <Card>
                 <CardContent>
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
@@ -153,9 +151,9 @@ export default function TikTokShopDashboard() {
                   </Typography>
                 </CardContent>
               </Card>
-            </Grid>
+            </Box>
 
-            <Grid item xs={12} sm={6} md={3}>
+            <Box sx={{ flex: 1 }}>
               <Card>
                 <CardContent>
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
@@ -167,30 +165,26 @@ export default function TikTokShopDashboard() {
                   </Typography>
                 </CardContent>
               </Card>
-            </Grid>
-          </Grid>
+            </Box>
+          </Box>
 
           {/* Navigation Buttons */}
-          <Grid container spacing={2} sx={{ mb: 4 }}>
-            <Grid item>
-              <Button
-                variant="contained"
-                startIcon={<InventoryIcon />}
-                onClick={() => router.push('/dashboard/tiktok-shop/products')}
-              >
-                Manage Products
-              </Button>
-            </Grid>
-            <Grid item>
-              <Button
-                variant="contained"
-                startIcon={<ShoppingCartIcon />}
-                onClick={() => router.push('/dashboard/tiktok-shop/orders')}
-              >
-                View Orders
-              </Button>
-            </Grid>
-          </Grid>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 4 }}>
+            <Button
+              variant="contained"
+              startIcon={<InventoryIcon />}
+              onClick={() => router.push('/dashboard/tiktok-shop/products')}
+            >
+              Manage Products
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<ShoppingCartIcon />}
+              onClick={() => router.push('/dashboard/tiktok-shop/orders')}
+            >
+              View Orders
+            </Button>
+          </Box>
 
           {/* Recent Orders */}
           {stats.recentOrders.length > 0 && (
@@ -200,50 +194,52 @@ export default function TikTokShopDashboard() {
                   Recent Orders
                 </Typography>
                 <Box sx={{ overflowX: 'auto' }}>
-                  <Grid container spacing={2}>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
                     {stats.recentOrders.slice(0, 5).map((order) => (
-                      <Grid item xs={12} key={order.id}>
-                        <Box sx={{ 
-                          display: 'flex', 
-                          justifyContent: 'space-between', 
+                      <Box
+                        key={order.id}
+                        sx={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
                           alignItems: 'center',
                           p: 2,
                           border: 1,
                           borderColor: 'divider',
-                          borderRadius: 1
-                        }}>
-                          <Box>
-                            <Typography variant="subtitle1" fontWeight="bold">
-                              {order.orderNumber}
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                              {order.customerName} • {order.customerEmail}
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                              {new Date(order.createdAt).toLocaleDateString()}
-                            </Typography>
-                          </Box>
-                          <Box sx={{ textAlign: 'right' }}>
-                            <Typography variant="h6" fontWeight="bold">
-                              {formatCurrency(order.totalAmount, order.currency)}
-                            </Typography>
-                            <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
-                              <Chip 
-                                label={order.status} 
-                                color={getStatusColor(order.status) as any}
-                                size="small"
-                              />
-                              <Chip 
-                                label={order.paymentStatus} 
-                                color={getStatusColor(order.paymentStatus) as any}
-                                size="small"
-                              />
-                            </Stack>
-                          </Box>
+                          borderRadius: 1,
+                          flex: 1
+                        }}
+                      >
+                        <Box>
+                          <Typography variant="subtitle1" fontWeight="bold">
+                            {order.orderNumber}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            {order.customerName} • {order.customerEmail}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            {new Date(order.createdAt).toLocaleDateString()}
+                          </Typography>
                         </Box>
-                      </Grid>
+                        <Box sx={{ textAlign: 'right' }}>
+                          <Typography variant="h6" fontWeight="bold">
+                            {formatCurrency(order.totalAmount, order.currency)}
+                          </Typography>
+                          <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+                            <Chip
+                              label={order.status}
+                              color={getStatusColor(order.status) as any}
+                              size="small"
+                            />
+                            <Chip
+                              label={order.paymentStatus}
+                              color={getStatusColor(order.paymentStatus) as any}
+                              size="small"
+                            />
+                          </Stack>
+                        </Box>
+                      </Box>
                     ))}
-                  </Grid>
+                  </Box>
                 </Box>
               </CardContent>
             </Card>
@@ -257,9 +253,15 @@ export default function TikTokShopDashboard() {
                   Top Products
                 </Typography>
                 <Box sx={{ overflowX: 'auto' }}>
-                  <Grid container spacing={2}>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
                     {stats.topProducts.slice(0, 5).map((product) => (
-                      <Grid item xs={12} sm={6} md={4} key={product.id}>
+                      <Box
+                        key={product.id}
+                        sx={{
+                          flex: 1,
+                          minWidth: { sm: 200, md: 250 }
+                        }}
+                      >
                         <Card variant="outlined">
                           <CardContent>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -278,8 +280,8 @@ export default function TikTokShopDashboard() {
                                 <Typography variant="h6" fontWeight="bold">
                                   {formatCurrency(product.price, product.currency)}
                                 </Typography>
-                                <Chip 
-                                  label={product.status} 
+                                <Chip
+                                  label={product.status}
                                   color={getStatusColor(product.status) as any}
                                   size="small"
                                   sx={{ mt: 1 }}
@@ -288,9 +290,9 @@ export default function TikTokShopDashboard() {
                             </Box>
                           </CardContent>
                         </Card>
-                      </Grid>
+                      </Box>
                     ))}
-                  </Grid>
+                  </Box>
                 </Box>
               </CardContent>
             </Card>

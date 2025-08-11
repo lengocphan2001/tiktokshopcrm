@@ -5,7 +5,6 @@ import {
   Box,
   Typography,
   Paper,
-  Grid,
   Table,
   TableBody,
   TableCell,
@@ -211,8 +210,8 @@ export const AdminAttendanceOverview: React.FC<AdminAttendanceOverviewProps> = (
       </Box>
 
       {/* Summary Cards */}
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={3}>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 3 }}>
+        <Box sx={{ flex: 1, minWidth: 200 }}>
           <Card>
             <CardContent>
               <Typography color="textSecondary" gutterBottom>
@@ -223,9 +222,9 @@ export const AdminAttendanceOverview: React.FC<AdminAttendanceOverviewProps> = (
               </Typography>
             </CardContent>
           </Card>
-        </Grid>
+        </Box>
         
-        <Grid item xs={12} sm={6} md={3}>
+        <Box sx={{ flex: 1, minWidth: 200 }}>
           <Card>
             <CardContent>
               <Typography color="textSecondary" gutterBottom>
@@ -238,9 +237,9 @@ export const AdminAttendanceOverview: React.FC<AdminAttendanceOverviewProps> = (
               </Typography>
             </CardContent>
           </Card>
-        </Grid>
+        </Box>
         
-        <Grid item xs={12} sm={6} md={3}>
+        <Box sx={{ flex: 1, minWidth: 200 }}>
           <Card>
             <CardContent>
               <Typography color="textSecondary" gutterBottom>
@@ -253,10 +252,9 @@ export const AdminAttendanceOverview: React.FC<AdminAttendanceOverviewProps> = (
               </Typography>
             </CardContent>
           </Card>
+        </Box>
         
-        </Grid>
-        
-        <Grid item xs={12} sm={6} md={3}>
+        <Box sx={{ flex: 1, minWidth: 200 }}>
           <Card>
             <CardContent>
               <Typography color="textSecondary" gutterBottom>
@@ -269,8 +267,8 @@ export const AdminAttendanceOverview: React.FC<AdminAttendanceOverviewProps> = (
               </Typography>
             </CardContent>
           </Card>
-        </Grid>
-      </Grid>
+        </Box>
+      </Box>
 
       {/* Users Table */}
       <TableContainer>
@@ -364,54 +362,53 @@ export const AdminAttendanceOverview: React.FC<AdminAttendanceOverviewProps> = (
             {selectedUserData.user.firstName} {selectedUserData.user.lastName} - {MONTHS[currentMonth - 1]} {currentYear}
           </Typography>
           
-          <Grid container spacing={1}>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
             {selectedUserData.attendance.days.map((day) => (
-              <Grid item xs key={day.date}>
-                <Box
-                  sx={{
-                    p: 1,
-                    minHeight: 40,
-                    border: '1px solid',
-                    borderColor: 'divider',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: day.isToday ? 'action.hover' : 'background.paper',
-                    position: 'relative',
-                  }}
-                >
-                  <Typography variant="caption" sx={{ mb: 0.5 }}>
-                    {new Date(day.date).getDate()}
-                  </Typography>
-                  
-                  {day.status && (
-                    <Chip
-                      label={STATUS_LABELS[day.status]}
-                      color={STATUS_COLORS[day.status]}
-                      size="small"
-                      variant="filled"
-                      sx={{ fontSize: '0.6rem', height: 16 }}
-                    />
-                  )}
-                  
-                  {day.notes && (
-                    <Box
-                      sx={{
-                        position: 'absolute',
-                        top: 2,
-                        right: 2,
-                        width: 6,
-                        height: 6,
-                        borderRadius: '50%',
-                        backgroundColor: 'primary.main',
-                      }}
-                    />
-                  )}
-                </Box>
-              </Grid>
+              <Box
+                key={day.date}
+                sx={{
+                  p: 1,
+                  minHeight: 40,
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: day.isToday ? 'action.hover' : 'background.paper',
+                  position: 'relative',
+                }}
+              >
+                <Typography variant="caption" sx={{ mb: 0.5 }}>
+                  {new Date(day.date).getDate()}
+                </Typography>
+                
+                {day.status && (
+                  <Chip
+                    label={STATUS_LABELS[day.status]}
+                    color={STATUS_COLORS[day.status]}
+                    size="small"
+                    variant="filled"
+                    sx={{ fontSize: '0.6rem', height: 16 }}
+                  />
+                )}
+                
+                {day.notes && (
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      top: 2,
+                      right: 2,
+                      width: 6,
+                      height: 6,
+                      borderRadius: '50%',
+                      backgroundColor: 'primary.main',
+                    }}
+                  />
+                )}
+              </Box>
             ))}
-          </Grid>
+          </Box>
         </Box>
       )}
     </Paper>

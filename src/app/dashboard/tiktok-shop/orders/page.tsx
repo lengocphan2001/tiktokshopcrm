@@ -6,7 +6,6 @@ import {
   Card,
   CardContent,
   Typography,
-  Grid,
   Button,
   Alert,
   CircularProgress,
@@ -267,8 +266,8 @@ export default function TikTokShopOrders() {
         </DialogTitle>
         <DialogContent>
           {selectedOrder && (
-            <Grid container spacing={3}>
-              <Grid item xs={12}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              <Box>
                 <Typography variant="h6" gutterBottom>
                   Customer Information
                 </Typography>
@@ -281,9 +280,9 @@ export default function TikTokShopOrders() {
                     )}
                   </CardContent>
                 </Card>
-              </Grid>
+              </Box>
 
-              <Grid item xs={12}>
+              <Box>
                 <Typography variant="h6" gutterBottom>
                   Shipping Address
                 </Typography>
@@ -296,9 +295,9 @@ export default function TikTokShopOrders() {
                     <Typography>{selectedOrder.shippingAddress.country}</Typography>
                   </CardContent>
                 </Card>
-              </Grid>
+              </Box>
 
-              <Grid item xs={12}>
+              <Box>
                 <Typography variant="h6" gutterBottom>
                   Order Items
                 </Typography>
@@ -327,28 +326,28 @@ export default function TikTokShopOrders() {
                     </Box>
                   </CardContent>
                 </Card>
-              </Grid>
+              </Box>
 
-              <Grid item xs={12} sm={6}>
-                <FormControl fullWidth>
-                  <InputLabel>Order Status</InputLabel>
-                  <Select
-                    value={statusUpdate}
-                    onChange={(e) => setStatusUpdate(e.target.value)}
-                    label="Order Status"
-                  >
-                    <MenuItem value="PENDING">PENDING</MenuItem>
-                    <MenuItem value="CONFIRMED">CONFIRMED</MenuItem>
-                    <MenuItem value="SHIPPED">SHIPPED</MenuItem>
-                    <MenuItem value="DELIVERED">DELIVERED</MenuItem>
-                    <MenuItem value="CANCELLED">CANCELLED</MenuItem>
-                    <MenuItem value="REFUNDED">REFUNDED</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
+              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                <Box sx={{ flex: 1, minWidth: 200 }}>
+                  <FormControl fullWidth>
+                    <InputLabel>Order Status</InputLabel>
+                    <Select
+                      value={statusUpdate}
+                      onChange={(e) => setStatusUpdate(e.target.value)}
+                      label="Order Status"
+                    >
+                      <MenuItem value="PENDING">PENDING</MenuItem>
+                      <MenuItem value="CONFIRMED">CONFIRMED</MenuItem>
+                      <MenuItem value="SHIPPED">SHIPPED</MenuItem>
+                      <MenuItem value="DELIVERED">DELIVERED</MenuItem>
+                      <MenuItem value="CANCELLED">CANCELLED</MenuItem>
+                      <MenuItem value="REFUNDED">REFUNDED</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Box>
 
-              <Grid item xs={12} sm={6}>
-                <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
                   <Stack direction="row" spacing={1}>
                     <Chip 
                       label={`Order: ${selectedOrder.status}`} 
@@ -360,8 +359,8 @@ export default function TikTokShopOrders() {
                     />
                   </Stack>
                 </Box>
-              </Grid>
-            </Grid>
+              </Box>
+            </Box>
           )}
         </DialogContent>
         <DialogActions>

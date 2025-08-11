@@ -14,7 +14,6 @@ import {
   Fade,
   useTheme,
   alpha,
-  Grid,
   Avatar,
 } from '@mui/material'
 import {
@@ -469,45 +468,45 @@ export const TimeClock: React.FC<TimeClockProps> = ({ userId }) => {
 
         {/* Quick Stats */}
         {stats && (
-          <Grid container spacing={3}>
-            <Grid item xs={12} sm={6}>
-              <Card elevation={0} sx={{ 
-                border: `1px solid ${theme.palette.divider}`,
-                background: `linear-gradient(135deg, ${alpha(theme.palette.success.main, 0.05)} 0%, ${alpha(theme.palette.info.main, 0.05)} 100%)`,
-              }}>
-                <CardContent sx={{ p: 3, textAlign: 'center' }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
-                    <TrendingUpIcon sx={{ fontSize: 32, color: 'success.main', mr: 1 }} />
-                  </Box>
-                  <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, color: 'text.secondary' }}>
-                    This Week
-                  </Typography>
-                  <Typography variant="h3" color="success.main" sx={{ fontWeight: 700 }}>
-                    {stats.currentWeekHours.toFixed(1)}h
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
+          <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap', justifyContent: 'center' }}>
+            <Box sx={{ 
+              flex: 1,
+              minWidth: 250,
+              border: `1px solid ${theme.palette.divider}`,
+              background: `linear-gradient(135deg, ${alpha(theme.palette.success.main, 0.05)} 0%, ${alpha(theme.palette.info.main, 0.05)} 100%)`,
+            }}>
+              <CardContent sx={{ p: 3, textAlign: 'center' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
+                  <TrendingUpIcon sx={{ fontSize: 32, color: 'success.main', mr: 1 }} />
+                </Box>
+                <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, color: 'text.secondary' }}>
+                  This Week
+                </Typography>
+                <Typography variant="h3" color="success.main" sx={{ fontWeight: 700 }}>
+                  {stats.currentWeekHours.toFixed(1)}h
+                </Typography>
+              </CardContent>
+            </Box>
             
-            <Grid item xs={12} sm={6}>
-              <Card elevation={0} sx={{ 
-                border: `1px solid ${theme.palette.divider}`,
-                background: `linear-gradient(135deg, ${alpha(theme.palette.info.main, 0.05)} 0%, ${alpha(theme.palette.primary.main, 0.05)} 100%)`,
-              }}>
-                <CardContent sx={{ p: 3, textAlign: 'center' }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
-                    <ScheduleIcon sx={{ fontSize: 32, color: 'info.main', mr: 1 }} />
-                  </Box>
-                  <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, color: 'text.secondary' }}>
-                    This Month
-                  </Typography>
-                  <Typography variant="h3" color="info.main" sx={{ fontWeight: 700 }}>
-                    {stats.currentMonthHours.toFixed(1)}h
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-          </Grid>
+            <Box sx={{ 
+              flex: 1,
+              minWidth: 250,
+              border: `1px solid ${theme.palette.divider}`,
+              background: `linear-gradient(135deg, ${alpha(theme.palette.info.main, 0.05)} 0%, ${alpha(theme.palette.primary.main, 0.05)} 100%)`,
+            }}>
+              <CardContent sx={{ p: 3, textAlign: 'center' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
+                  <ScheduleIcon sx={{ fontSize: 32, color: 'info.main', mr: 1 }} />
+                </Box>
+                <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, color: 'text.secondary' }}>
+                  This Month
+                </Typography>
+                <Typography variant="h3" color="info.main" sx={{ fontWeight: 700 }}>
+                  {stats.currentMonthHours.toFixed(1)}h
+                </Typography>
+              </CardContent>
+            </Box>
+          </Box>
         )}
       </Box>
     </Fade>
