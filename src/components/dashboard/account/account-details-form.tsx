@@ -126,28 +126,24 @@ export function AccountDetailsForm(): React.JSX.Element {
   };
 
   const handleAvatarUpload = async (file: File) => {
-    try {
-      const token = localStorage.getItem('auth-token');
-      if (!token) {
-        setError('Authentication required');
-        return;
-      }
+    const token = localStorage.getItem('auth-token');
+    if (!token) {
+      setError('Authentication required');
+      return;
+    }
 
-      const response = await uploadApi.uploadAvatar(token, file);
-      
-      if (response.success && response.data) {
-        const avatarUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/uploads/avatars/${response.data.filename}`;
-        setFormData(prev => ({ ...prev, avatar: avatarUrl }));
-        showSuccess('Avatar uploaded successfully!');
-        // Refresh user data to update header avatar
-        if (userContext?.checkSession) {
-          await userContext.checkSession();
-        }
-      } else {
-        setError(response.message || 'Failed to upload avatar');
+    const response = await uploadApi.uploadAvatar(token, file);
+    
+    if (response.success && response.data) {
+      const avatarUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/uploads/avatars/${response.data.filename}`;
+      setFormData(prev => ({ ...prev, avatar: avatarUrl }));
+      showSuccess('Avatar uploaded successfully!');
+      // Refresh user data to update header avatar
+      if (userContext?.checkSession) {
+        await userContext.checkSession();
       }
-    } catch (error) {
-      setError('Failed to upload avatar');
+    } else {
+      setError(response.message || 'Failed to upload avatar');
     }
   };
 

@@ -1,21 +1,23 @@
 import { API_CONFIG, API_ENDPOINTS } from '@/config/api'
 
-export interface UploadResponse {
+export interface UploadData {
+  filename: string
+  path: string
+  size: number
+  mimetype: string
+}
+
+export interface ApiResponse<T> {
   success: boolean
   message: string
-  data?: {
-    filename: string
-    path: string
-    size: number
-    mimetype: string
-  }
+  data?: T
 }
 
 class UploadApi {
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
-  ): Promise<T> {
+  ): Promise<ApiResponse<T>> {
     const url = `${API_CONFIG.BASE_URL}${endpoint}`
     
     const config: RequestInit = {
@@ -30,23 +32,28 @@ class UploadApi {
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.message || 'Upload failed')
+        return {
+          success: false,
+          message: data.message || 'Upload failed',
+          data: undefined
+        }
       }
 
       return data
     } catch (error) {
-      if (error instanceof Error) {
-        throw error
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Network error',
+        data: undefined
       }
-      throw new Error('Network error')
     }
   }
 
-  async uploadAvatar(token: string, file: File): Promise<UploadResponse> {
+  async uploadAvatar(token: string, file: File): Promise<ApiResponse<UploadData>> {
     const formData = new FormData()
     formData.append('avatar', file)
 
-    return this.request<UploadResponse>(API_ENDPOINTS.UPLOAD.AVATAR, {
+    return this.request<UploadData>(API_ENDPOINTS.UPLOAD.AVATAR, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,

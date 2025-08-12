@@ -245,7 +245,7 @@ export function UserManagement(): React.JSX.Element {
 
       const response = await usersApi.getUsers(token, params.toString());
       
-      if (response.success) {
+      if (response.success && response.data) {
         setUsers(response.data.users);
         setTotalUsers(response.data.total);
       } else {

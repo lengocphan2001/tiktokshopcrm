@@ -69,28 +69,28 @@ export function TaskTypeManagement(): React.JSX.Element {
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('auth-token') : null;
 
-  const loadTaskTypes = React.useCallback(async () => {
+    const loadTaskTypes = React.useCallback(async () => {
     if (!token) return;
-
+    
     setLoading(true);
-    try {
-      const queryParams = new URLSearchParams({
-        page: (page + 1).toString(),
-        limit: rowsPerPage.toString(),
-        ...(searchTerm && { search: searchTerm }),
-      });
+    setErrorMessage(null);
+    
+    const queryParams = new URLSearchParams({
+      page: (page + 1).toString(),
+      limit: rowsPerPage.toString(),
+      ...(searchTerm && { search: searchTerm }),
+    });
 
-      const response = await taskTypesApi.getTaskTypes(token, queryParams.toString());
-      
-      if (response.success && response.data) {
-        setTaskTypes(response.data.taskTypes);
-        setTotalTaskTypes(response.data.total);
-      }
-    } catch (error) {
-      setErrorMessage('Failed to load task types');
-    } finally {
-      setLoading(false);
+    const response = await taskTypesApi.getTaskTypes(token, queryParams.toString());
+    
+    if (response.success && response.data) {
+      setTaskTypes(response.data.taskTypes);
+      setTotalTaskTypes(response.data.total);
+    } else {
+      setErrorMessage(response.message || 'Failed to load task types');
     }
+    
+    setLoading(false);
   }, [token, page, rowsPerPage, searchTerm]);
 
   React.useEffect(() => {

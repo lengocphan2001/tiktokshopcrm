@@ -66,15 +66,20 @@ class TaskTypesApi {
           errorMessage = JSON.stringify(data)
         }
         
-        throw new Error(errorMessage)
+        return {
+          success: false,
+          message: errorMessage,
+          data: undefined
+        }
       }
 
       return data
     } catch (error) {
-      if (error instanceof Error) {
-        throw error
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Network error',
+        data: undefined
       }
-      throw new Error('Network error')
     }
   }
 

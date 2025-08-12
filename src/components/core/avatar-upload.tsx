@@ -51,27 +51,24 @@ export function AvatarUpload({
     setUploading(true);
     setUploadError(null);
 
-    try {
-      const token = localStorage.getItem('auth-token');
-      if (!token) {
-        setUploadError('Authentication required');
-        return;
-      }
-
-      const response = await uploadApi.uploadAvatar(token, file);
-      
-      if (response.success && response.data) {
-        // Construct the full URL to the uploaded file
-        const avatarUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/uploads/avatars/${response.data.filename}`;
-        onChange(avatarUrl);
-      } else {
-        setUploadError(response.message || 'Upload failed');
-      }
-    } catch (error) {
-      setUploadError('Failed to upload avatar');
-    } finally {
+    const token = localStorage.getItem('auth-token');
+    if (!token) {
+      setUploadError('Authentication required');
       setUploading(false);
+      return;
     }
+
+    const response = await uploadApi.uploadAvatar(token, file);
+    
+    if (response.success && response.data) {
+      // Construct the full URL to the uploaded file
+      const avatarUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/uploads/avatars/${response.data.filename}`;
+      onChange(avatarUrl);
+    } else {
+      setUploadError(response.message || 'Upload failed');
+    }
+    
+    setUploading(false);
   };
 
   const handleRemoveAvatar = () => {
