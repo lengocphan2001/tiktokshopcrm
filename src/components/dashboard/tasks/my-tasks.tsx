@@ -63,36 +63,35 @@ export function MyTasks(): React.JSX.Element {
   };
 
   const loadMyTasks = React.useCallback(async () => {
-    try {
-      setLoading(true);
-      const token = localStorage.getItem('auth-token');
-      if (!token) {
-        setError('Authentication required');
-        return;
-      }
-
-      const params: any = {
-        page: page + 1,
-        limit: rowsPerPage,
-        assigneeId: currentUser?.id,
-      };
-
-      if (searchTerm) params.search = searchTerm;
-      if (statusFilter) params.status = statusFilter;
-
-      const response = await tasksApi.getTasksByAssignee(token, currentUser?.id || '', params);
-      
-      if (response.success && response.data) {
-        setTasks(response.data.tasks);
-        setTotalTasks(response.data.total);
-      } else {
-        setError(response.message || 'Failed to load tasks');
-      }
-    } catch (error) {
-      setError('Failed to load tasks');
-    } finally {
+    setLoading(true);
+    setError(null);
+    
+    const token = localStorage.getItem('auth-token');
+    if (!token) {
+      setError('Authentication required');
       setLoading(false);
+      return;
     }
+
+    const params: any = {
+      page: page + 1,
+      limit: rowsPerPage,
+      assigneeId: currentUser?.id,
+    };
+
+    if (searchTerm) params.search = searchTerm;
+    if (statusFilter) params.status = statusFilter;
+
+    const response = await tasksApi.getTasksByAssignee(token, currentUser?.id || '', params);
+    
+    if (response.success && response.data) {
+      setTasks(response.data.tasks);
+      setTotalTasks(response.data.total);
+    } else {
+      setError(response.message || 'Failed to load tasks');
+    }
+    
+    setLoading(false);
   }, [page, rowsPerPage, searchTerm, statusFilter, currentUser?.id]);
 
   React.useEffect(() => {
@@ -145,30 +144,25 @@ export function MyTasks(): React.JSX.Element {
     setError(null);
     setSuccess(null);
 
-    try {
-      const token = localStorage.getItem('auth-token');
-      if (!token) {
-        setError('Authentication required');
-        return;
-      }
+    const token = localStorage.getItem('auth-token');
+    if (!token) {
+      setError('Authentication required');
+      return;
+    }
 
-      // Update both status and result
-      const statusResponse = await tasksApi.updateTaskStatus(token, updatingTask.id, statusData);
-      const resultResponse = await tasksApi.updateTaskResult(token, updatingTask.id, resultData);
-      
-      if (statusResponse.success && resultResponse.success) {
-        setUpdateDialogOpen(false);
-        setUpdatingTask(null);
-        setStatusData('');
-        setResultData('');
-        loadMyTasks();
-        showSuccess('Task updated successfully!');
-      } else {
-        setError('Failed to update task');
-      }
-    } catch (error) {
+    // Update both status and result
+    const statusResponse = await tasksApi.updateTaskStatus(token, updatingTask.id, statusData);
+    const resultResponse = await tasksApi.updateTaskResult(token, updatingTask.id, resultData);
+    
+    if (statusResponse.success && resultResponse.success) {
+      setUpdateDialogOpen(false);
+      setUpdatingTask(null);
+      setStatusData('');
+      setResultData('');
+      loadMyTasks();
+      showSuccess('Task updated successfully!');
+    } else {
       setError('Failed to update task');
-      
     }
   };
 

@@ -160,62 +160,55 @@ export function TaskManagement(): React.JSX.Element {
   };
 
   const loadTasks = React.useCallback(async () => {
-    try {
-      setLoading(true);
-      const token = localStorage.getItem('auth-token');
-      if (!token) {
-        setError('Authentication required');
-        return;
-      }
-
-      const params: any = {
-        page: page + 1,
-        limit: rowsPerPage,
-      };
-
-      if (searchTerm) params.search = searchTerm;
-      if (statusFilter) params.status = statusFilter;
-      if (taskTypeFilter) params.taskTypeId = taskTypeFilter;
-
-      const response = await tasksApi.getTasks(token, params);
-      
-      if (response.success && response.data) {
-        setTasks(response.data.tasks);
-        setTotalTasks(response.data.total);
-      } else {
-        setError(response.message || 'Failed to load tasks');
-      }
-    } catch (error) {
-      setError('Failed to load tasks');
-    } finally {
+    setLoading(true);
+    setError(null);
+    
+    const token = localStorage.getItem('auth-token');
+    if (!token) {
+      setError('Authentication required');
       setLoading(false);
+      return;
     }
+
+    const params: any = {
+      page: page + 1,
+      limit: rowsPerPage,
+    };
+
+    if (searchTerm) params.search = searchTerm;
+    if (statusFilter) params.status = statusFilter;
+    if (taskTypeFilter) params.taskTypeId = taskTypeFilter;
+
+    const response = await tasksApi.getTasks(token, params);
+    
+    if (response.success && response.data) {
+      setTasks(response.data.tasks);
+      setTotalTasks(response.data.total);
+    } else {
+      setError(response.message || 'Failed to load tasks');
+    }
+    
+    setLoading(false);
   }, [page, rowsPerPage, searchTerm, statusFilter, taskTypeFilter]);
 
   const loadTaskTypes = React.useCallback(async () => {
-    try {
-      const token = localStorage.getItem('auth-token');
-      if (!token) return;
+    const token = localStorage.getItem('auth-token');
+    if (!token) return;
 
-      const response = await taskTypesApi.getTaskTypes(token, 'limit=100');
-      
-      if (response.success && response.data) {
-        setTaskTypes(response.data.taskTypes);
-      }
-    } catch (error) {
+    const response = await taskTypesApi.getTaskTypes(token, 'limit=100');
+    
+    if (response.success && response.data) {
+      setTaskTypes(response.data.taskTypes);
     }
   }, []);
 
   const loadUsers = React.useCallback(async () => {
-    try {
-      const token = localStorage.getItem('auth-token');
-      if (!token) return;
+    const token = localStorage.getItem('auth-token');
+    if (!token) return;
 
-      const response = await usersApi.getUsers(token, '');
-      if (response.success && response.data) {
-        setUsers(response.data.users);
-      }
-    } catch (error) {
+    const response = await usersApi.getUsers(token, '');
+    if (response.success && response.data) {
+      setUsers(response.data.users);
     }
   }, []);
 
@@ -262,37 +255,33 @@ export function TaskManagement(): React.JSX.Element {
       return;
     }
 
-    try {
-      const token = localStorage.getItem('auth-token');
-      if (!token) {
-        setError('Authentication required');
-        return;
-      }
+    const token = localStorage.getItem('auth-token');
+    if (!token) {
+      setError('Authentication required');
+      return;
+    }
 
-      // Send only the task data - backend will handle createdById and updatedBy
-      const taskData = createTaskData;
+    // Send only the task data - backend will handle createdById and updatedBy
+    const taskData = createTaskData;
 
-      const response = await tasksApi.createTask(token, taskData);
-      
-      if (response.success) {
-        setCreateDialogOpen(false);
-        setCreateTaskData({
-          name: '',
-          description: '',
-          startDate: '',
-          endDate: '',
-          resource: '',
-          result: '',
-          taskTypeId: '',
-          assigneeId: '',
-        });
-        loadTasks();
-        showSuccess('Task created successfully!');
-      } else {
-        setError(response.message || 'Failed to create task');
-      }
-    } catch (error) {
-      setError('Failed to create task');
+    const response = await tasksApi.createTask(token, taskData);
+    
+    if (response.success) {
+      setCreateDialogOpen(false);
+      setCreateTaskData({
+        name: '',
+        description: '',
+        startDate: '',
+        endDate: '',
+        resource: '',
+        result: '',
+        taskTypeId: '',
+        assigneeId: '',
+      });
+      loadTasks();
+      showSuccess('Task created successfully!');
+    } else {
+      setError(response.message || 'Failed to create task');
     }
   };
 
@@ -329,25 +318,21 @@ export function TaskManagement(): React.JSX.Element {
     setError(null);
     setSuccess(null);
 
-    try {
-      const token = localStorage.getItem('auth-token');
-      if (!token) {
-        setError('Authentication required');
-        return;
-      }
+    const token = localStorage.getItem('auth-token');
+    if (!token) {
+      setError('Authentication required');
+      return;
+    }
 
-      const response = await tasksApi.deleteTask(token, deletingTask.id);
-      
-      if (response.success) {
-        setDeleteDialogOpen(false);
-        setDeletingTask(null);
-        loadTasks();
-        showSuccess('Task deleted successfully!');
-      } else {
-        setError(response.message || 'Failed to delete task');
-      }
-    } catch (error) {
-      setError('Failed to delete task');
+    const response = await tasksApi.deleteTask(token, deletingTask.id);
+    
+    if (response.success) {
+      setDeleteDialogOpen(false);
+      setDeletingTask(null);
+      loadTasks();
+      showSuccess('Task deleted successfully!');
+    } else {
+      setError(response.message || 'Failed to delete task');
     }
   };
 
@@ -361,34 +346,30 @@ export function TaskManagement(): React.JSX.Element {
       return;
     }
 
-    try {
-      const token = localStorage.getItem('auth-token');
-      if (!token) {
-        setError('Authentication required');
-        return;
-      }
+    const token = localStorage.getItem('auth-token');
+    if (!token) {
+      setError('Authentication required');
+      return;
+    }
 
-      // Filter out empty values and send only the task data
-      const filteredData: any = {};
-      Object.entries(editTaskData).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== '') {
-          filteredData[key] = value;
-        }
-      });
-
-      const response = await tasksApi.updateTask(token, selectedTask.id, filteredData);
-      
-      if (response.success) {
-        setEditDialogOpen(false);
-        setSelectedTask(null);
-        setEditTaskData({});
-        loadTasks();
-        showSuccess('Task updated successfully!');
-      } else {
-        setError(response.message || 'Failed to update task');
+    // Filter out empty values and send only the task data
+    const filteredData: any = {};
+    Object.entries(editTaskData).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        filteredData[key] = value;
       }
-    } catch (error) {
-      setError('Failed to update task');
+    });
+
+    const response = await tasksApi.updateTask(token, selectedTask.id, filteredData);
+    
+    if (response.success) {
+      setEditDialogOpen(false);
+      setSelectedTask(null);
+      setEditTaskData({});
+      loadTasks();
+      showSuccess('Task updated successfully!');
+    } else {
+      setError(response.message || 'Failed to update task');
     }
   };
 

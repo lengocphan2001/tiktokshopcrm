@@ -73,7 +73,7 @@ export function TaskTypeManagement(): React.JSX.Element {
     if (!token) return;
     
     setLoading(true);
-    setErrorMessage(null);
+    setErrorMessage('');
     
     const queryParams = new URLSearchParams({
       page: (page + 1).toString(),
