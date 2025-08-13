@@ -211,24 +211,24 @@ export class AttendanceService {
 
     // Calculate total stats
     const totalDays = allAttendance.length
-    const presentDays = allAttendance.filter(a => a.status === 'PRESENT').length
-    const absentDays = allAttendance.filter(a => a.status === 'ABSENT').length
-    const lateDays = allAttendance.filter(a => a.status === 'LATE').length
-    const halfDays = allAttendance.filter(a => a.status === 'HALF_DAY').length
+    const presentDays = allAttendance.filter((a: any) => a.status === 'PRESENT').length
+    const absentDays = allAttendance.filter((a: any) => a.status === 'ABSENT').length
+    const lateDays = allAttendance.filter((a: any) => a.status === 'LATE').length
+    const halfDays = allAttendance.filter((a: any) => a.status === 'HALF_DAY').length
     const attendanceRate = totalDays > 0 ? (presentDays / totalDays) * 100 : 0
 
     // Calculate current month stats
-    const currentMonthAttendance = allAttendance.filter(a => {
+    const currentMonthAttendance = allAttendance.filter((a: any) => {
       const attendanceDate = new Date(a.date)
       const attendanceDateVietnam = new Date(attendanceDate.toLocaleString("en-US", {timeZone: "Asia/Ho_Chi_Minh"}))
       return attendanceDateVietnam.getFullYear() === currentYear && attendanceDateVietnam.getMonth() + 1 === currentMonth
     })
 
     const currentMonthTotalDays = currentMonthAttendance.length
-    const currentMonthPresentDays = currentMonthAttendance.filter(a => a.status === 'PRESENT').length
-    const currentMonthAbsentDays = currentMonthAttendance.filter(a => a.status === 'ABSENT').length
-    const currentMonthLateDays = currentMonthAttendance.filter(a => a.status === 'LATE').length
-    const currentMonthHalfDays = currentMonthAttendance.filter(a => a.status === 'HALF_DAY').length
+    const currentMonthPresentDays = currentMonthAttendance.filter((a: any) => a.status === 'PRESENT').length
+    const currentMonthAbsentDays = currentMonthAttendance.filter((a: any) => a.status === 'ABSENT').length
+    const currentMonthLateDays = currentMonthAttendance.filter((a: any) => a.status === 'LATE').length
+    const currentMonthHalfDays = currentMonthAttendance.filter((a: any) => a.status === 'HALF_DAY').length
     const currentMonthAttendanceRate = currentMonthTotalDays > 0 ? (currentMonthPresentDays / currentMonthTotalDays) * 100 : 0
 
     return {
@@ -272,7 +272,7 @@ export class AttendanceService {
     })
 
     const result = await Promise.all(
-      users.map(async (user) => {
+      users.map(async (user: any) => {
         const attendance = await this.getMonthlyAttendance(user.id, year, month)
         const stats = await this.getAttendanceStats(user.id)
         
@@ -313,7 +313,7 @@ export class AttendanceService {
       },
     })
 
-    return attendanceRecords.map(record => this.formatAttendanceResponse(record))
+    return attendanceRecords.map((record: any) => this.formatAttendanceResponse(record))
   }
 
   private formatAttendanceResponse(record: any): AttendanceRecord {

@@ -39,4 +39,15 @@ export const API_ENDPOINTS = {
     UPDATE_RESULT: (id: string) => `/tasks/${id}/result`,
     BY_ASSIGNEE: (assigneeId: string) => `/tasks/assignee/${assigneeId}`,
   },
+  TIKTOK_SHOP: {
+    TEST_CONNECTION: '/tiktok-shop/test-connection',
+    STATS: '/tiktok-shop/stats',
+    PRODUCTS: '/tiktok-shop/products',
+    CREATE_PRODUCT: '/tiktok-shop/products',
+    UPDATE_PRODUCT: (productId: string) => `/tiktok-shop/products/${productId}`,
+    DELETE_PRODUCT: (productId: string) => `/tiktok-shop/products/${productId}`,
+    ORDERS: '/tiktok-shop/orders',
+    ORDER_DETAILS: (orderId: string) => `/tiktok-shop/orders/${orderId}`,
+    UPDATE_ORDER_STATUS: (orderId: string) => `/tiktok-shop/orders/${orderId}/status`,
+  },
 } as const; 

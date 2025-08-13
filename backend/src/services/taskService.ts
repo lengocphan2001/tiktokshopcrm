@@ -109,7 +109,7 @@ export class TaskService {
     const totalPages = Math.ceil(total / validLimit)
 
     return {
-      tasks: tasks.map(task => this.formatTaskResponse(task)),
+      tasks: tasks.map((task: any) => this.formatTaskResponse(task)),
       total,
       page: validPage,
       limit: validLimit,
@@ -159,7 +159,7 @@ export class TaskService {
     const totalPages = Math.ceil(total / validLimit)
 
     return {
-      tasks: tasks.map(task => this.formatTaskResponse(task)),
+      tasks: tasks.map((task: any) => this.formatTaskResponse(task)),
       total,
       page: validPage,
       limit: validLimit,

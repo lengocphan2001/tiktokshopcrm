@@ -74,7 +74,7 @@ export class TaskTypeService {
     const totalPages = Math.ceil(total / limit)
 
     return {
-      taskTypes: taskTypes.map(taskType => this.formatTaskTypeResponse(taskType)),
+      taskTypes: taskTypes.map((taskType: any) => this.formatTaskTypeResponse(taskType)),
       total,
       page,
       limit,

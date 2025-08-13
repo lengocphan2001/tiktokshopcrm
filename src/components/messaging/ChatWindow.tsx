@@ -19,36 +19,7 @@ import {
 } from '@mui/material'
 import { Send as SendIcon, MoreVert as MoreVertIcon, ArrowBack as ArrowBackIcon } from '@mui/icons-material'
 import { formatDistanceToNow } from 'date-fns'
-
-interface Message {
-  id: string
-  content: string
-  type: 'TEXT' | 'SYSTEM' | 'NOTIFICATION'
-  status: 'SENT' | 'DELIVERED' | 'READ' | 'SENDING'
-  senderId: string
-  createdAt: Date
-  sender: {
-    id: string
-    firstName: string
-    lastName: string
-    avatar?: string
-  }
-}
-
-interface Conversation {
-  id: string
-  type: string
-  participants: Array<{
-    user: {
-      id: string
-      firstName: string
-      lastName: string
-      email: string
-      avatar?: string
-    }
-  }>
-  messages: Message[]
-}
+import type { Message, Conversation } from '@/types/messaging'
 
 interface ChatWindowProps {
   conversation?: Conversation

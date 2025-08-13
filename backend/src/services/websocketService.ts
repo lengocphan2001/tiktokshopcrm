@@ -44,7 +44,7 @@ export class WebSocketService {
   }
 
   private setupEventHandlers() {
-    this.io.on('connection', (socket) => {
+    this.io.on('connection', (socket: any) => {
       
 
       // Handle user authentication

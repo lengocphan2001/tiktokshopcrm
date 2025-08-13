@@ -192,7 +192,7 @@ export class TimeRecordService {
     ])
 
     return {
-      data: records.map(record => this.formatTimeRecordResponse(record)),
+      data: records.map((record: any) => this.formatTimeRecordResponse(record)),
       pagination: {
         page,
         limit,
@@ -247,7 +247,7 @@ export class TimeRecordService {
     let totalWorkHours = 0
     let totalWorkDays = completedRecords.length
 
-    completedRecords.forEach(record => {
+    completedRecords.forEach((record: any) => {
       if (record.clockInAt && record.clockOutAt && record.workHours) {
         totalWorkHours += Number(record.workHours)
       }
@@ -265,7 +265,7 @@ export class TimeRecordService {
     })
 
     let currentWeekHours = 0
-    weekRecords.forEach(record => {
+    weekRecords.forEach((record: any) => {
       if (record.workHours) {
         currentWeekHours += Number(record.workHours)
       }
@@ -283,7 +283,7 @@ export class TimeRecordService {
     })
 
     let currentMonthHours = 0
-    monthRecords.forEach(record => {
+    monthRecords.forEach((record: any) => {
       if (record.workHours) {
         currentMonthHours += Number(record.workHours)
       }
@@ -332,7 +332,7 @@ export class TimeRecordService {
     })
 
     let breakHours = 0
-    breakRecords.forEach(record => {
+    breakRecords.forEach((record: any) => {
       if (record.breakStartAt && record.breakEndAt) {
         breakHours += (record.breakEndAt.getTime() - record.breakStartAt.getTime()) / (1000 * 60 * 60)
       }

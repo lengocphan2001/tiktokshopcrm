@@ -206,7 +206,7 @@ export class UserService {
     const totalPages = Math.ceil(total / limit)
 
     return {
-      users: users.map(user => this.formatUserResponse(user)),
+      users: users.map((user: any) => this.formatUserResponse(user)),
       total,
       page,
       limit,

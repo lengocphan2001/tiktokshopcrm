@@ -73,7 +73,11 @@ export class TikTokShopService {
 
     const response = await this.makeRequest<{ products: TikTokShopProduct[], total: number }>(
       'GET',
-      `${path}?${new URLSearchParams(params).toString()}`
+      `${path}?${new URLSearchParams({
+        page_no: params.page_no.toString(),
+        page_size: params.page_size.toString(),
+        shop_id: params.shop_id
+      }).toString()}`
     )
 
     return {
@@ -150,7 +154,11 @@ export class TikTokShopService {
 
     const response = await this.makeRequest<{ orders: TikTokShopOrder[], total: number }>(
       'GET',
-      `${path}?${new URLSearchParams(params).toString()}`
+      `${path}?${new URLSearchParams({
+        page_no: params.page_no.toString(),
+        page_size: params.page_size.toString(),
+        shop_id: params.shop_id
+      }).toString()}`
     )
 
     return {

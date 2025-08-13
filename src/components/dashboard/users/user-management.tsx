@@ -785,7 +785,7 @@ export function UserManagement(): React.JSX.Element {
               <Grid size={{ xs: 12, sm: 6 }}>
                 <ModernDatePicker
                   label="Date of Birth"
-                  value={createUserData.dateOfBirth}
+                  value={createUserData.dateOfBirth || ''}
                   onChange={(value) => setCreateUserData({ ...createUserData, dateOfBirth: value })}
                   error={!!createErrors.dateOfBirth}
                   helperText={createErrors.dateOfBirth || "Optional: User's date of birth"}
