@@ -122,7 +122,6 @@ export class UserController {
       const safeData = { ...data }
       delete safeData.role
       delete safeData.status
-      delete safeData.isActive
 
       const user = await this.userService.updateUser(userId, safeData, userId)
 
