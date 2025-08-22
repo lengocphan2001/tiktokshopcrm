@@ -69,8 +69,8 @@ export default function MessagesPage() {
 
   // PERFORMANCE: Memoize auth token to prevent unnecessary re-computations
   const authToken = React.useMemo(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('auth-token')
+    if (typeof globalThis.window !== 'undefined') {
+      return globalThis.window.localStorage.getItem('auth-token')
     }
     return null
   }, [])
@@ -112,8 +112,9 @@ export default function MessagesPage() {
       
       
       setConversations(sortedConversations)
-    } catch (error: any) {
-      setError(error.message || 'Failed to load conversations')
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load conversations'
+      setError(errorMessage)
     } finally {
       setLoading(false)
     }
@@ -160,8 +161,9 @@ export default function MessagesPage() {
           return [...uniqueNewMessages, ...prev]
         })
       }
-    } catch (error: any) {
-      setError(error.message || 'Failed to load messages')
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load messages'
+      setError(errorMessage)
     } finally {
       setLoading(false)
     }
@@ -245,7 +247,7 @@ export default function MessagesPage() {
     }
 
     // Create optimistic message with unique ID
-    const tempId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`
     const optimisticMessage = {
       id: tempId,
       content: content.trim(),
@@ -326,7 +328,7 @@ export default function MessagesPage() {
         return [updatedConversation, ...otherConversations]
       })
     })
-    .catch((error) => {
+    .catch((_error) => {
       // Remove optimistic message on error
       setCurrentMessages(prev => prev.filter(msg => msg.id !== tempId))
       setError('Failed to send message')
@@ -370,8 +372,9 @@ export default function MessagesPage() {
       setCurrentConversation(newConversation)
       setCurrentMessages([])
       setError('')
-    } catch (error: any) {
-      setError(error.message || 'Failed to start conversation')
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to start conversation'
+      setError(errorMessage)
     } finally {
       setLoading(false)
     }
@@ -395,7 +398,7 @@ export default function MessagesPage() {
   }, [currentConversation, leaveConversation, joinConversation, fetchMessages])
 
   // Handle real-time messages
-  const handleNewMessage = React.useCallback((message: any) => {
+  const handleNewMessage = React.useCallback((message: Message) => {
     // Only add message to current messages if it's for the current conversation and not from the current user
     if (currentConversation && message.conversationId === currentConversation.id && message.senderId !== user?.id) {
       setCurrentMessages(prev => {

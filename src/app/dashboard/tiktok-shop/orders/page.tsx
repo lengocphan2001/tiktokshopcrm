@@ -1,5 +1,6 @@
 'use client'
 
+import * as React from 'react'
 import { useState, useEffect } from 'react'
 import {
   Box,
@@ -28,23 +29,18 @@ import {
   MenuItem,
   Pagination,
   Stack,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
   List,
   ListItem,
   ListItemText,
   Divider
 } from '@mui/material'
 import {
-  ExpandMore as ExpandMoreIcon,
   ArrowBack as ArrowBackIcon,
-  Edit as EditIcon,
   Visibility as ViewIcon
 } from '@mui/icons-material'
 import { useRouter } from 'next/navigation'
 import { tiktokShopApi } from '../../../../lib/api/tiktokShop'
-import { TikTokShopOrder, TikTokShopOrdersResponse } from '../../../../types/tiktokShop'
+import { TikTokShopOrder } from '../../../../types/tiktokShop'
 
 export default function TikTokShopOrders() {
   const router = useRouter()
@@ -63,7 +59,7 @@ export default function TikTokShopOrders() {
 
   useEffect(() => {
     loadOrders()
-  }, [page])
+  }, [page, loadOrders])
 
   const loadOrders = async () => {
     try {
@@ -73,8 +69,9 @@ export default function TikTokShopOrders() {
       setOrders(response.orders)
       setTotal(response.total)
       setTotalPages(Math.ceil(response.total / pageSize))
-    } catch (err: any) {
-      setError(err.message || 'Failed to load orders')
+    } catch (error_: unknown) {
+      const errorMessage = error_ instanceof Error ? error_.message : 'Failed to load orders'
+      setError(errorMessage)
     } finally {
       setLoading(false)
     }
@@ -93,8 +90,9 @@ export default function TikTokShopOrders() {
       await tiktokShopApi.updateOrderStatus(selectedOrder.id, statusUpdate)
       setDialogOpen(false)
       loadOrders()
-    } catch (err: any) {
-      setError(err.message || 'Failed to update order status')
+    } catch (error_: unknown) {
+      const errorMessage = error_ instanceof Error ? error_.message : 'Failed to update order status'
+      setError(errorMessage)
     }
   }
 
@@ -108,31 +106,39 @@ export default function TikTokShopOrders() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'DELIVERED':
-      case 'PAID':
+      case 'PAID': {
         return 'success'
+      }
       case 'PENDING':
-      case 'CONFIRMED':
+      case 'CONFIRMED': {
         return 'warning'
+      }
       case 'CANCELLED':
       case 'FAILED':
-      case 'REFUNDED':
+      case 'REFUNDED': {
         return 'error'
-      default:
+      }
+      default: {
         return 'default'
+      }
     }
   }
 
   const getPaymentStatusColor = (status: string) => {
     switch (status) {
-      case 'PAID':
+      case 'PAID': {
         return 'success'
-      case 'PENDING':
+      }
+      case 'PENDING': {
         return 'warning'
+      }
       case 'FAILED':
-      case 'REFUNDED':
+      case 'REFUNDED': {
         return 'error'
-      default:
+      }
+      default: {
         return 'default'
+      }
     }
   }
 

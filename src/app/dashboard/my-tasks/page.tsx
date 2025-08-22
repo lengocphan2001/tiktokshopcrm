@@ -1,3 +1,4 @@
+import * as React from 'react';
 import { MyTasks } from '@/components/dashboard/tasks/my-tasks';
 
 export default function MyTasksPage() {
