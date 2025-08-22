@@ -2,7 +2,6 @@ import { Request, Response } from 'express'
 import { authenticateUser, generateToken, updateLastLogin } from '../utils/auth'
 import { LoginInput } from '../utils/validation'
 import { UserService } from '../services/userService'
-import bcrypt from 'bcryptjs'
 
 interface LoginResponse {
   user: {
